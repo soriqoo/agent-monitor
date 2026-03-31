@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: agent-monitor
+  datasource:
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/agent_monitor}"
+    username: "${DB_USERNAME:agent_monitor}"
+    password: "${DB_PASSWORD:agent_monitor}"
+    driver-class-name: "org.postgresql.Driver"
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+app:
+  timezone: "Asia/Seoul"
+  monitoring:
+    poll-cron: "0 */5 * * * *"
+    timeout-ms: 3000
+    connect-timeout-ms: 3000
+  slack:
+    enabled: "${SLACK_ENABLED:false}"
+    webhook-url: "${SLACK_WEBHOOK_URL:}"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    probes:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
