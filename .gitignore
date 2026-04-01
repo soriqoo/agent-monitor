@@ -1,9 +1,17 @@
 .gradle/
+.kotlin/
 build/
 out/
 .idea/
+.vscode/
 *.iml
 .env
 runtime/.env
 logs/
 data/
+docker-compose.override.yml
+docs/RUNBOOK.private.md
+.codex-temp/
+*.log
+.DS_Store
+Thumbs.db
