@@ -7,7 +7,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class ServicePollingScheduler(
-    private val monitoredServiceStore: MonitoredServiceStore
+    private val monitoredServiceStore: MonitoredServiceStore,
+    private val servicePollingService: ServicePollingService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -16,7 +17,34 @@ class ServicePollingScheduler(
         val services = monitoredServiceStore.findEnabledServices()
         log.info("Polling tick. enabledServices={}", services.size)
 
-        // Initial scaffold only.
-        // Actual HTTP polling, persistence, and incident handling will be implemented next.
+        services.forEach { service ->
+            val result = servicePollingService.poll(service)
+            val logMessage =
+                "Polled service. serviceName={}, environment={}, healthStatus={}, runStatus={}, lastRunDate={}, responseTimeMs={}, error={}"
+
+            if (result.healthStatus == com.dbot.agentmonitor.domain.ServiceCheckStatus.UP && result.error == null) {
+                log.info(
+                    logMessage,
+                    result.serviceName,
+                    result.environment,
+                    result.healthStatus,
+                    result.runStatus,
+                    result.lastRunDate,
+                    result.responseTimeMs,
+                    result.error
+                )
+            } else {
+                log.warn(
+                    logMessage,
+                    result.serviceName,
+                    result.environment,
+                    result.healthStatus,
+                    result.runStatus,
+                    result.lastRunDate,
+                    result.responseTimeMs,
+                    result.error
+                )
+            }
+        }
     }
 }
