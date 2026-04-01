@@ -17,6 +17,13 @@ app:
     poll-cron: "0 */5 * * * *"
     timeout-ms: 3000
     connect-timeout-ms: 3000
+  seed:
+    enabled: "${APP_SEED_ENABLED:true}"
+    monitored-services:
+      - service-name: "dmib"
+        base-url: "${DMIB_BASE_URL:http://localhost:8080}"
+        environment: "${DMIB_ENVIRONMENT:prod}"
+        enabled: "${DMIB_ENABLED:true}"
   slack:
     enabled: "${SLACK_ENABLED:false}"
     webhook-url: "${SLACK_WEBHOOK_URL:}"
