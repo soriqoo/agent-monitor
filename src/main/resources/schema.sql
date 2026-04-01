@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS monitored_service (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS monitored_service_service_env_ux
+    ON monitored_service (service_name, environment);
+
 CREATE TABLE IF NOT EXISTS service_check_history (
     id BIGSERIAL PRIMARY KEY,
     service_name VARCHAR(100) NOT NULL,
