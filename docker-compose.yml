@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16
+    container_name: agent-monitor-db
+    restart: always
+    environment:
+      POSTGRES_DB: agent_monitor
+      POSTGRES_USER: agent_monitor
+      POSTGRES_PASSWORD: agent_monitor
+    volumes:
+      - agent_monitor_pg:/var/lib/postgresql/data
+    networks:
+      - agent-monitor-internal
+    ports:
+      - "127.0.0.1:15433:5432"
+
+  agent-monitor:
+    build: .
+    container_name: agent-monitor
+    restart: always
+    depends_on:
+      - db
+    environment:
+      - DB_URL=${DB_URL:-jdbc:postgresql://db:5432/agent_monitor}
+      - DB_USERNAME=${DB_USERNAME:-agent_monitor}
+      - DB_PASSWORD=${DB_PASSWORD:-agent_monitor}
+      - APP_SEED_ENABLED=${APP_SEED_ENABLED:-true}
+      - DMIB_BASE_URL=${DMIB_BASE_URL:-http://dmib:8080}
+      - DMIB_ENVIRONMENT=${DMIB_ENVIRONMENT:-prod}
+      - DMIB_ENABLED=${DMIB_ENABLED:-true}
+      - SLACK_ENABLED=${SLACK_ENABLED:-false}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+    networks:
+      - agent-monitor-internal
+      - monitoring-shared
+    ports:
+      - "127.0.0.1:${AGENT_MONITOR_PORT:-18080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  agent_monitor_pg:
+
+networks:
+  agent-monitor-internal:
+  monitoring-shared:
+    name: ${SHARED_MONITORING_NETWORK:-bot-monitoring}
+    external: true
