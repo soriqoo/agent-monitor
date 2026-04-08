@@ -43,6 +43,16 @@
 - `2026-04-01T08:00:03+09:00`와 `2026-03-31T23:00:03Z`는 같은 시점일 수 있다
 - time zone / offset / instant 차이를 이해해야 운영 데이터 해석이 안정적이다
 
+### Spring 프록시와 Kotlin final class
+- Kotlin 클래스는 기본이 final이라 Spring AOP/트랜잭션 프록시와 충돌할 수 있다
+- stereotype annotation(`@Service`, `@Repository`)과 프록시 방식이 실제로 어떻게 붙는지 이해하면 디버깅이 빨라진다
+- 실무에서는 "왜 빈 생성은 되는데 트랜잭션 시점에 깨지는가"를 로그로 좁히는 감각이 중요하다
+
+### Docker Compose project name 충돌
+- 여러 서비스를 `/apps/<service>/repo` 구조로 두는 것은 흔하다
+- 이때 compose 기본 project name이 모두 `repo`가 되면 서비스명, 네트워크, DB 이름이 섞일 수 있다
+- `name:`을 명시해 충돌을 막는 것은 작은 설정이지만 운영 안정성에는 큰 영향을 준다
+
 ## 추천 학습 순서
 
 1. JDBC 기반 상태 저장
