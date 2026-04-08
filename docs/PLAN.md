@@ -24,6 +24,8 @@
 - GitHub Actions CI 추가
 - DMIB seed 기반 monitored service 자동 등록 구현 완료
 - 실제 polling 구현 완료
+- `service_check_history`, `service_current_status` 저장 구현 완료
+- Docker Compose project name 충돌 대응 완료 (`name: agent-monitor`)
 
 ## 최근 변경 이력
 
@@ -43,6 +45,17 @@
 - `/actuator/health`, `/internal/monitoring/last-run` 조회 구현
 - health와 last-run 결과를 하나의 polling 결과 모델로 정규화
 - 성공 / 부분 실패 / health down 시나리오 테스트 추가
+
+### 4. 상태 저장 연결
+- polling 결과를 `service_check_history`에 append
+- 최신 상태를 `service_current_status`에 upsert
+- scheduler에서 polling 직후 저장까지 이어지는 흐름 검증
+- 저장 계층을 `@Repository`로 전환해 Spring 트랜잭션 프록시 충돌 제거
+
+### 5. 운영 compose 이름 고정
+- `apps/<service>/repo` 구조에서 Docker Compose 기본 project name 충돌 이슈 확인
+- `agent-monitor` compose에 `name: agent-monitor` 추가
+- OCI에서 `agent-monitor-db` 분리 기동 및 polling 정상화 확인
 
 ## 현재 설계 결정
 
@@ -64,12 +77,10 @@
 
 ## 다음 구현 우선순위
 
-1. `service_check_history`, `service_current_status` 저장 구현
-2. incident open/close 정책 구현
-3. `last-run endpoint` 연속 실패 판단 기준 추가
-4. Slack 알림 연동
-5. DMIB를 첫 서비스로 등록하고 end-to-end 확인
-6. 이후 `monitored_service` CRUD 또는 관리 API 확장 검토
+1. incident open/close 정책 구현
+2. `last-run endpoint` 연속 실패 판단 기준 추가
+3. Slack 알림 연동
+4. `monitored_service` CRUD 또는 관리 API 확장 검토
 
 ## 다음 단계 구현 준비
 
@@ -78,6 +89,11 @@
 - `service_check_history`에는 매 poll 결과를 append
 - `service_current_status`에는 최신 상태를 upsert
 - 이후 incident 판단은 현재 상태와 최근 이력을 같이 참고할 수 있게 만든다
+
+### 상태 저장 단계에서 배운 점
+- JDBC 저장 계층에 트랜잭션을 붙일 때 Kotlin final class와 Spring 프록시 방식이 충돌할 수 있다
+- `@Bean` 팩토리 생성보다 `@Repository` stereotype 등록이 트랜잭션/테스트 일관성에 유리하다
+- 운영 검증 단계에서는 polling 성공 여부뿐 아니라 저장 성공 여부까지 같은 흐름으로 확인해야 한다
 
 ### incident 단계에서 할 일
 - incident 유형을 최소 2가지로 구분하는지 검토
