@@ -2,7 +2,16 @@
 
 Centralized monitoring service for polling multiple bot services, tracking execution status, and sending operational alerts to Slack.
 
-`agent-monitor` is planned as the control-tower service for projects like DMIB. Each bot remains responsible for its own execution and business notifications, while `agent-monitor` focuses on health, last-run status, incident tracking, and centralized alerting.
+`agent-monitor` is being built as the control-tower service for projects like DMIB. Each bot remains responsible for its own execution and business notifications, while `agent-monitor` focuses on health, last-run status, incident tracking, and centralized alerting.
+
+## Overview
+
+`agent-monitor` is intended to be a small but operationally minded backend service.
+The goal is not just to expose status data, but to keep a reliable central view of whether monitored services are alive, whether their scheduled work succeeded, and whether an incident is still unresolved.
+
+The first monitored service is DMIB, which already exposes:
+- `GET /actuator/health`
+- `GET /internal/monitoring/last-run`
 
 ## Scope
 
@@ -29,6 +38,14 @@ Initial monitored service:
 5. `slack alert`
    - operator-facing notifications
 
+## Design Principles
+
+- Start with polling before introducing event-driven infrastructure
+- Separate service execution from central operational monitoring
+- Store both current status and historical checks
+- Keep repository, docs, tests, and runtime behavior aligned
+- Grow toward a reusable monitoring contract for multiple bot services
+
 ## Tech Stack
 
 - Kotlin
@@ -44,6 +61,107 @@ Planned later, only if needed:
 - Kafka
 - SSE or WebSocket dashboard
 
+## Current Monitoring Contract
+
+Required target endpoints:
+- `GET /actuator/health`
+- `GET /internal/monitoring/last-run`
+
+Example `last-run` response:
+
+```json
+{
+  "service": "dmib",
+  "environment": "prod",
+  "timezone": "Asia/Seoul",
+  "lastRunDate": "2026-03-31",
+  "status": "SENT",
+  "sentAt": "2026-03-31T08:00:03+09:00",
+  "error": null
+}
+```
+
+## Running Locally
+
+Recommended first check:
+
+```bash
+./gradlew test
+```
+
+Key environment variables:
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `SLACK_ENABLED`
+- `SLACK_WEBHOOK_URL`
+- `APP_SEED_ENABLED`
+- `DMIB_BASE_URL`
+- `DMIB_ENVIRONMENT`
+- `DMIB_ENABLED`
+
+Notes:
+- PostgreSQL is the default runtime database
+- The test profile uses in-memory H2 in PostgreSQL compatibility mode
+- DMIB can be auto-registered on startup through seed configuration
+
+## Running With Docker
+
+This repository now includes an operational Docker baseline for OCI-style service deployment.
+
+Recommended structure on the server:
+
+```text
+/home/ubuntu/ai_project/apps/agent-monitor
+  data/
+  logs/
+  repo/
+  runtime/
+```
+
+Recommended deployment shape:
+- `agent-monitor` runs in its own Docker Compose project
+- PostgreSQL for `agent-monitor` runs with that project
+- DMIB remains a separate Compose project
+- both services join the same external Docker network so `agent-monitor` can poll `dmib:8080`
+
+Quick start:
+
+```bash
+cp .env.example .env
+docker network create bot-monitoring
+docker compose up -d --build
+```
+
+Default Docker expectation:
+- `agent-monitor` host port: `127.0.0.1:18080`
+- `agent-monitor` DB host port: `127.0.0.1:15433`
+- DMIB base URL inside the shared network: `http://dmib:8080`
+
+Important network note:
+- if `agent-monitor` runs as a container, `http://127.0.0.1:8080` points back to itself, not to DMIB
+- container-to-container polling should use the shared network hostname such as `http://dmib:8080`
+
+## Repository Standards
+
+- `main` is protected by convention and should receive reviewed changes
+- day-to-day work should happen in `feature/*` branches
+- runtime secrets such as real `.env` files and webhook URLs are not committed
+- docs are maintained alongside code, not as a separate afterthought
+
+Recommended workflow:
+
+```bash
+git switch main
+git pull --ff-only
+git switch -c feature/<task-name>
+
+# work...
+git add .
+git commit -m "..."
+git push -u origin feature/<task-name>
+```
+
 ## Documentation
 
 - [`docs/PLAN.md`](D:/Toy_Project/agent-monitor/docs/PLAN.md)
@@ -56,13 +174,18 @@ Planned later, only if needed:
 - [`docs/CONTRIBUTING.md`](D:/Toy_Project/agent-monitor/docs/CONTRIBUTING.md)
 - [`docs/SESSION_HANDOFF.md`](D:/Toy_Project/agent-monitor/docs/SESSION_HANDOFF.md)
 
-## Getting Started
-
-```bash
-./gradlew test
-```
-
 ## Current Status
 
-This repository is currently scaffolded as an initial project shell.
-The next step is to implement the first end-to-end flow with DMIB as the first monitored service.
+Current scaffolded capabilities:
+- monitoring summary endpoint
+- monitored service store
+- polling scheduler skeleton
+- database schema draft
+- documentation set for planning, research, study, runbook, and handoff
+
+Next implementation order:
+- seed-based DMIB registration
+- real HTTP polling
+- status/history persistence
+- incident open/close flow
+- Slack alert integration
