@@ -105,6 +105,43 @@ Notes:
 - The test profile uses in-memory H2 in PostgreSQL compatibility mode
 - DMIB can be auto-registered on startup through seed configuration
 
+## Running With Docker
+
+This repository now includes an operational Docker baseline for OCI-style service deployment.
+
+Recommended structure on the server:
+
+```text
+/home/ubuntu/ai_project/apps/agent-monitor
+  data/
+  logs/
+  repo/
+  runtime/
+```
+
+Recommended deployment shape:
+- `agent-monitor` runs in its own Docker Compose project
+- PostgreSQL for `agent-monitor` runs with that project
+- DMIB remains a separate Compose project
+- both services join the same external Docker network so `agent-monitor` can poll `dmib:8080`
+
+Quick start:
+
+```bash
+cp .env.example .env
+docker network create bot-monitoring
+docker compose up -d --build
+```
+
+Default Docker expectation:
+- `agent-monitor` host port: `127.0.0.1:18080`
+- `agent-monitor` DB host port: `127.0.0.1:15433`
+- DMIB base URL inside the shared network: `http://dmib:8080`
+
+Important network note:
+- if `agent-monitor` runs as a container, `http://127.0.0.1:8080` points back to itself, not to DMIB
+- container-to-container polling should use the shared network hostname such as `http://dmib:8080`
+
 ## Repository Standards
 
 - `main` is protected by convention and should receive reviewed changes
@@ -115,6 +152,9 @@ Notes:
 Recommended workflow:
 
 ```bash
+git config user.name "soriqoo"
+git config user.email "107284670+soriqoo@users.noreply.github.com"
+
 git switch main
 git pull --ff-only
 git switch -c feature/<task-name>
@@ -124,6 +164,11 @@ git add .
 git commit -m "..."
 git push -u origin feature/<task-name>
 ```
+
+Author note:
+- before the first commit in a personal project, verify local Git author settings for this repository
+- recommended for personal work: `soriqoo <107284670+soriqoo@users.noreply.github.com>`
+- keeping repo-local author config avoids leaking company email settings from other workspaces
 
 ## Documentation
 
