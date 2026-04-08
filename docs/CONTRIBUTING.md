@@ -13,7 +13,7 @@
 
 ```bash
 git config user.name "soriqoo"
-git config user.email "soriqoo@users.noreply.github.com"
+git config user.email "107284670+soriqoo@users.noreply.github.com"
 git config --get user.name
 git config --get user.email
 ```
@@ -27,7 +27,7 @@ git config --get user.email
 
 ```bash
 git config user.name "soriqoo"
-git config user.email "soriqoo@users.noreply.github.com"
+git config user.email "107284670+soriqoo@users.noreply.github.com"
 
 git switch main
 git pull --ff-only

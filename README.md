@@ -153,7 +153,7 @@ Recommended workflow:
 
 ```bash
 git config user.name "soriqoo"
-git config user.email "soriqoo@users.noreply.github.com"
+git config user.email "107284670+soriqoo@users.noreply.github.com"
 
 git switch main
 git pull --ff-only
@@ -167,7 +167,7 @@ git push -u origin feature/<task-name>
 
 Author note:
 - before the first commit in a personal project, verify local Git author settings for this repository
-- recommended for personal work: `soriqoo <soriqoo@users.noreply.github.com>`
+- recommended for personal work: `soriqoo <107284670+soriqoo@users.noreply.github.com>`
 - keeping repo-local author config avoids leaking company email settings from other workspaces
 
 ## Documentation
