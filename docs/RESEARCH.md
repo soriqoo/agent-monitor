@@ -88,6 +88,16 @@ scheduler는 "언제 누구를 확인할지"만 담당하고,
 - `sentAt` 같은 시간값은 문자열 표현보다 같은 시점인지가 더 중요하다
 - 테스트와 저장 설계에서는 가능한 한 instant 기준 사고가 안전하다
 
+### 상태 저장 계층의 트랜잭션 경계
+- Kotlin + Spring에서 JDBC 저장 계층에 `@Transactional`을 붙일 때는 프록시 방식과 클래스 open 여부를 같이 봐야 한다
+- 운영 코드에서는 저장 로직이 스케줄러 안으로 흩어지지 않게 별도 저장 계층으로 모으는 편이 유지보수에 유리하다
+- `@Repository` stereotype를 쓰면 트랜잭션, 예외 변환, 테스트 wiring이 더 자연스럽다
+
+### Compose project name은 명시적으로 관리한다
+- `apps/<service>/repo` 구조는 흔하지만 Docker Compose 기본 project name은 마지막 디렉터리 이름을 따른다
+- 여러 서비스가 모두 `repo` 디렉터리에서 compose를 실행하면 project name 충돌이 생길 수 있다
+- 실무에서는 `name:` 또는 wrapper의 `-p`로 project name을 명시하는 편이 안전하다
+
 ## 나중에 붙일 수 있는 기술
 
 ### Redis
