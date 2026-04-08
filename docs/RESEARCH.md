@@ -98,6 +98,16 @@ scheduler는 "언제 누구를 확인할지"만 담당하고,
 - 여러 서비스가 모두 `repo` 디렉터리에서 compose를 실행하면 project name 충돌이 생길 수 있다
 - 실무에서는 `name:` 또는 wrapper의 `-p`로 project name을 명시하는 편이 안전하다
 
+### incident는 장애 lifecycle이지 이상 징후 저장소가 아니다
+- polling 결과는 모두 `history/current_status`에 남기고, incident는 그중 운영 장애로 승격된 경우만 관리하는 편이 좋다
+- 이 분리가 있어야 "무슨 일이 있었나"와 "지금 대응 중인 장애가 무엇인가"를 구분할 수 있다
+
+### 1차 incident 정책은 보수적으로 시작한다
+- `health != UP`은 availability 장애로 보고 즉시 open
+- `runStatus = FAILED/ERROR`는 execution 장애로 보고 즉시 open
+- `last-run endpoint timeout` 같은 관측 실패는 우선 상태 저장만 하고, 연속 실패 판단은 다음 단계로 넘긴다
+- 실무에서는 이렇게 해야 초반 운영에서 false positive와 alert fatigue를 줄이기 쉽다
+
 ## 나중에 붙일 수 있는 기술
 
 ### Redis

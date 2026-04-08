@@ -53,6 +53,15 @@
 - 이때 compose 기본 project name이 모두 `repo`가 되면 서비스명, 네트워크, DB 이름이 섞일 수 있다
 - `name:`을 명시해 충돌을 막는 것은 작은 설정이지만 운영 안정성에는 큰 영향을 준다
 
+### incident open과 close 기준
+- open 기준은 "운영자가 지금 대응해야 하는가"라는 질문으로 잡는 편이 좋다
+- close 기준은 "정상 복구가 확인됐는가"여야 한다
+- recovery를 너무 느슨하게 잡으면 장애가 덜 해결된 상태에서 incident가 닫힐 수 있다
+
+### 중복 incident를 막는 이유
+- 같은 장애가 5분마다 반복 체크될 때마다 새 incident가 생기면 운영 데이터가 오염된다
+- unresolved 상태 하나를 유지하고, 복구되면 close하는 lifecycle이 실무적으로 더 유용하다
+
 ## 추천 학습 순서
 
 1. JDBC 기반 상태 저장
