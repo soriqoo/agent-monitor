@@ -152,6 +152,9 @@ Important network note:
 Recommended workflow:
 
 ```bash
+git config user.name "soriqoo"
+git config user.email "soriqoo@users.noreply.github.com"
+
 git switch main
 git pull --ff-only
 git switch -c feature/<task-name>
@@ -161,6 +164,11 @@ git add .
 git commit -m "..."
 git push -u origin feature/<task-name>
 ```
+
+Author note:
+- before the first commit in a personal project, verify local Git author settings for this repository
+- recommended for personal work: `soriqoo <soriqoo@users.noreply.github.com>`
+- keeping repo-local author config avoids leaking company email settings from other workspaces
 
 ## Documentation
 
