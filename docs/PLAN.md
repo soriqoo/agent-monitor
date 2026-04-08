@@ -25,6 +25,7 @@
 - DMIB seed 기반 monitored service 자동 등록 구현 완료
 - 실제 polling 구현 완료
 - `service_check_history`, `service_current_status` 저장 구현 완료
+- incident open/close 기본 정책 구현 완료
 - Docker Compose project name 충돌 대응 완료 (`name: agent-monitor`)
 
 ## 최근 변경 이력
@@ -56,6 +57,13 @@
 - `apps/<service>/repo` 구조에서 Docker Compose 기본 project name 충돌 이슈 확인
 - `agent-monitor` compose에 `name: agent-monitor` 추가
 - OCI에서 `agent-monitor-db` 분리 기동 및 polling 정상화 확인
+
+### 6. incident lifecycle 1차 구현
+- `health != UP` 이면 즉시 incident open
+- `runStatus = FAILED/ERROR` 이면 즉시 incident open
+- `health == UP` 이고 `error == null` 이며 실패 run status가 아니면 open incident close
+- 반복 실패 시 중복 open incident는 만들지 않음
+- 관측 실패 성격의 `last-run` 일시 오류는 아직 incident로 승격하지 않음
 
 ## 현재 설계 결정
 
@@ -102,6 +110,11 @@
 - 즉시 open 대상과 연속 실패 후 open 대상을 분리
 - recovery 시 close 조건을 명확히 정의
 - Slack 알림 dedupe 기준도 incident lifecycle과 맞춘다
+
+### incident 단계에서 배운 점
+- incident는 모든 이상 징후를 담는 테이블이 아니라 운영자가 추적해야 할 unresolved 장애 lifecycle이다
+- 관측 실패와 실제 실행 실패를 같은 규칙으로 열면 초반 운영 노이즈가 크게 늘어난다
+- 따라서 1차 버전에서는 명백한 실패만 즉시 open 하고, 관측 실패 누적 판단은 다음 단계로 미루는 편이 안전하다
 
 ## 보류 중인 항목
 
