@@ -17,6 +17,7 @@ app:
     poll-cron: "0 */5 * * * *"
     timeout-ms: 3000
     connect-timeout-ms: 3000
+    observation-failure-open-threshold: 3
   seed:
     enabled: "${APP_SEED_ENABLED:true}"
     monitored-services:

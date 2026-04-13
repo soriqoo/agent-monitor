@@ -9,6 +9,12 @@ import org.springframework.transaction.annotation.Transactional
 class ServiceStatusStore(
     private val jdbcTemplate: JdbcTemplate
 ) {
+    data class StoredCheck(
+        val healthStatus: String,
+        val runStatus: String?,
+        val error: String?
+    )
+
     @Transactional
     fun recordPollResult(result: ServicePollResult) {
         appendHistory(result)
@@ -26,6 +32,28 @@ class ServiceStatusStore(
             serviceName,
             environment
         ) ?: 0L
+    }
+
+    fun findRecentChecks(serviceName: String, environment: String, limit: Int): List<StoredCheck> {
+        return jdbcTemplate.query(
+            """
+            SELECT health_status, run_status, error
+            FROM service_check_history
+            WHERE service_name = ? AND environment = ?
+            ORDER BY checked_at DESC, id DESC
+            LIMIT ?
+            """.trimIndent(),
+            { rs, _ ->
+                StoredCheck(
+                    healthStatus = rs.getString("health_status"),
+                    runStatus = rs.getString("run_status"),
+                    error = rs.getString("error")
+                )
+            },
+            serviceName,
+            environment,
+            limit
+        )
     }
 
     private fun appendHistory(result: ServicePollResult) {

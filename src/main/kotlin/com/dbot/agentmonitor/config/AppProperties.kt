@@ -12,7 +12,8 @@ data class AppProperties(
     data class Monitoring(
         val pollCron: String = "0 */5 * * * *",
         val timeoutMs: Long = 3000,
-        val connectTimeoutMs: Int = 3000
+        val connectTimeoutMs: Int = 3000,
+        val observationFailureOpenThreshold: Int = 3
     )
 
     data class Slack(
