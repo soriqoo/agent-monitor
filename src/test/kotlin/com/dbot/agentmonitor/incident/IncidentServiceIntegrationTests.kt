@@ -2,6 +2,7 @@ package com.dbot.agentmonitor.incident
 
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import com.dbot.agentmonitor.domain.ServicePollResult
+import com.dbot.agentmonitor.store.ServiceStatusStore
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,6 +20,9 @@ class IncidentServiceIntegrationTests {
     lateinit var incidentService: IncidentService
 
     @Autowired
+    lateinit var serviceStatusStore: ServiceStatusStore
+
+    @Autowired
     lateinit var jdbcTemplate: JdbcTemplate
 
     @BeforeEach
@@ -32,7 +36,7 @@ class IncidentServiceIntegrationTests {
 
     @Test
     fun healthDownOpensIncident() {
-        incidentService.applyPollResult(
+        recordAndApply(
             ServicePollResult(
                 serviceName = "dmib",
                 environment = "prod",
@@ -51,7 +55,7 @@ class IncidentServiceIntegrationTests {
 
     @Test
     fun explicitRunFailureOpensIncident() {
-        incidentService.applyPollResult(
+        recordAndApply(
             ServicePollResult(
                 serviceName = "dmib",
                 environment = "prod",
@@ -70,11 +74,11 @@ class IncidentServiceIntegrationTests {
 
     @Test
     fun degradedObservationFailureDoesNotOpenIncident() {
-        incidentService.applyPollResult(
+        recordAndApply(
             ServicePollResult(
                 serviceName = "dmib",
                 environment = "prod",
-                healthStatus = ServiceCheckStatus.UP,
+                healthStatus = ServiceCheckStatus.DEGRADED,
                 runStatus = null,
                 lastRunDate = null,
                 lastSuccessAt = null,
@@ -82,6 +86,72 @@ class IncidentServiceIntegrationTests {
                 responseTimeMs = 3100,
                 error = "Last-run request failed: timeout"
             )
+        )
+
+        assertThat(openIncidentCount("dmib", "prod")).isZero()
+    }
+
+    @Test
+    fun consecutiveObservationFailuresOpenIncidentAtThreshold() {
+        val baseResult = ServicePollResult(
+            serviceName = "dmib",
+            environment = "prod",
+            healthStatus = ServiceCheckStatus.DEGRADED,
+            runStatus = null,
+            lastRunDate = null,
+            lastSuccessAt = null,
+            checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
+            responseTimeMs = 3100,
+            error = "Last-run request failed: timeout"
+        )
+
+        repeat(2) { index ->
+            recordAndApply(
+                baseResult.copy(checkedAt = baseResult.checkedAt.plusMinutes(index.toLong() * 5))
+            )
+        }
+        assertThat(openIncidentCount("dmib", "prod")).isZero()
+
+        recordAndApply(
+            baseResult.copy(checkedAt = baseResult.checkedAt.plusMinutes(10))
+        )
+
+        assertThat(openIncidentCount("dmib", "prod")).isEqualTo(1)
+    }
+
+    @Test
+    fun nonConsecutiveObservationFailuresDoNotOpenIncident() {
+        val observationFailure = ServicePollResult(
+            serviceName = "dmib",
+            environment = "prod",
+            healthStatus = ServiceCheckStatus.DEGRADED,
+            runStatus = null,
+            lastRunDate = null,
+            lastSuccessAt = null,
+            checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
+            responseTimeMs = 3100,
+            error = "Last-run request failed: timeout"
+        )
+
+        recordAndApply(observationFailure)
+        recordAndApply(
+            ServicePollResult(
+                serviceName = "dmib",
+                environment = "prod",
+                healthStatus = ServiceCheckStatus.UP,
+                runStatus = "SENT",
+                lastRunDate = "2026-04-08",
+                lastSuccessAt = OffsetDateTime.parse("2026-04-08T08:00:03+09:00"),
+                checkedAt = OffsetDateTime.parse("2026-04-08T10:05:00+09:00"),
+                responseTimeMs = 18,
+                error = null
+            )
+        )
+        recordAndApply(
+            observationFailure.copy(checkedAt = OffsetDateTime.parse("2026-04-08T10:10:00+09:00"))
+        )
+        recordAndApply(
+            observationFailure.copy(checkedAt = OffsetDateTime.parse("2026-04-08T10:15:00+09:00"))
         )
 
         assertThat(openIncidentCount("dmib", "prod")).isZero()
@@ -100,7 +170,7 @@ class IncidentServiceIntegrationTests {
             "Health request failed: timeout"
         )
 
-        incidentService.applyPollResult(
+        recordAndApply(
             ServicePollResult(
                 serviceName = "dmib",
                 environment = "prod",
@@ -142,8 +212,8 @@ class IncidentServiceIntegrationTests {
             error = "Health request failed: timeout"
         )
 
-        incidentService.applyPollResult(firstFailure)
-        incidentService.applyPollResult(firstFailure.copy(checkedAt = OffsetDateTime.parse("2026-04-08T10:05:00+09:00")))
+        recordAndApply(firstFailure)
+        recordAndApply(firstFailure.copy(checkedAt = OffsetDateTime.parse("2026-04-08T10:05:00+09:00")))
 
         assertThat(openIncidentCount("dmib", "prod")).isEqualTo(1)
     }
@@ -159,5 +229,10 @@ class IncidentServiceIntegrationTests {
             serviceName,
             environment
         ) ?: 0L
+    }
+
+    private fun recordAndApply(result: ServicePollResult) {
+        serviceStatusStore.recordPollResult(result)
+        incidentService.applyPollResult(result)
     }
 }

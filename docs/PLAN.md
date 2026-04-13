@@ -26,6 +26,7 @@
 - 실제 polling 구현 완료
 - `service_check_history`, `service_current_status` 저장 구현 완료
 - incident open/close 기본 정책 구현 완료
+- `last-run endpoint` 연속 실패 incident 승격 구현 완료
 - Docker Compose project name 충돌 대응 완료 (`name: agent-monitor`)
 
 ## 최근 변경 이력
@@ -65,6 +66,11 @@
 - 반복 실패 시 중복 open incident는 만들지 않음
 - 관측 실패 성격의 `last-run` 일시 오류는 아직 incident로 승격하지 않음
 
+### 7. 관측 실패 연속 판단 구현
+- `Last-run request failed:` 패턴의 관측 실패는 기본 3회 연속 시 incident open
+- 최근 history를 역순으로 조회해 "정상 poll 없이 이어진 연속 실패"인지 판단
+- threshold는 `app.monitoring.observation-failure-open-threshold`로 조정 가능
+
 ## 현재 설계 결정
 
 ### Seed를 먼저 도입한 이유
@@ -85,10 +91,9 @@
 
 ## 다음 구현 우선순위
 
-1. incident open/close 정책 구현
-2. `last-run endpoint` 연속 실패 판단 기준 추가
-3. Slack 알림 연동
-4. `monitored_service` CRUD 또는 관리 API 확장 검토
+1. Slack 알림 연동
+2. OCI/실서비스에서 incident open/close smoke test
+3. `monitored_service` CRUD 또는 관리 API 확장 검토
 
 ## 다음 단계 구현 준비
 
@@ -115,6 +120,7 @@
 - incident는 모든 이상 징후를 담는 테이블이 아니라 운영자가 추적해야 할 unresolved 장애 lifecycle이다
 - 관측 실패와 실제 실행 실패를 같은 규칙으로 열면 초반 운영 노이즈가 크게 늘어난다
 - 따라서 1차 버전에서는 명백한 실패만 즉시 open 하고, 관측 실패 누적 판단은 다음 단계로 미루는 편이 안전하다
+- 누적 판단은 현재 결과만 보는 게 아니라 최근 history를 함께 봐야 의미가 있다
 
 ## 보류 중인 항목
 
