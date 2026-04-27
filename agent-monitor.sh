@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_ENV_FILE="$ROOT_DIR/../runtime/.env"
+ENV_FILE="${ENV_FILE:-$DEFAULT_ENV_FILE}"
+DEFAULT_LOG_LINES="${LOG_LINES:-100}"
+
+load_env_file() {
+  if [[ -f "$ENV_FILE" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$ENV_FILE"
+    set +a
+  fi
+}
+
+require_env_file() {
+  if [[ ! -f "$ENV_FILE" ]]; then
+    echo "Missing env file: $ENV_FILE" >&2
+    echo "Set ENV_FILE or create ../runtime/.env before running this command." >&2
+    exit 1
+  fi
+}
+
+compose() {
+  require_env_file
+  (
+    cd "$ROOT_DIR"
+    docker compose --env-file "$ENV_FILE" "$@"
+  )
+}
+
+app_port() {
+  echo "${AGENT_MONITOR_PORT:-18080}"
+}
+
+app_url() {
+  echo "http://127.0.0.1:$(app_port)"
+}
+
+print_help() {
+  cat <<'EOF'
+Usage:
+  ./agent-monitor.sh <command>
+
+Commands:
+  help        Show this help message
+  sync        Fetch origin, switch to main, and reset to origin/main
+  deploy      Rebuild and recreate the docker compose stack
+  ps          Show compose service status
+  logs        Show recent agent-monitor logs
+  logs-follow Follow agent-monitor logs
+  health      Call /actuator/health
+  summary     Call /internal/monitoring/summary
+  status      Show ps, health, and summary together
+
+Environment:
+  ENV_FILE    Override the runtime env file path
+  LOG_LINES   Override the default log tail size for logs
+EOF
+}
+
+run_sync() {
+  (
+    cd "$ROOT_DIR"
+    git fetch origin --prune
+    git switch main
+    git reset --hard origin/main
+    git log --oneline -5
+  )
+}
+
+run_deploy() {
+  load_env_file
+  compose up -d --build --force-recreate
+}
+
+run_ps() {
+  compose ps
+}
+
+run_logs() {
+  compose logs --tail "$DEFAULT_LOG_LINES" agent-monitor
+}
+
+run_logs_follow() {
+  compose logs -f agent-monitor
+}
+
+run_health() {
+  load_env_file
+  curl -fsS "$(app_url)/actuator/health"
+  echo
+}
+
+run_summary() {
+  load_env_file
+  curl -fsS "$(app_url)/internal/monitoring/summary"
+  echo
+}
+
+run_status() {
+  run_ps
+  run_health
+  run_summary
+}
+
+main() {
+  local command="${1:-help}"
+
+  case "$command" in
+    help|-h|--help)
+      print_help
+      ;;
+    sync)
+      run_sync
+      ;;
+    deploy)
+      run_deploy
+      ;;
+    ps)
+      run_ps
+      ;;
+    logs)
+      run_logs
+      ;;
+    logs-follow)
+      run_logs_follow
+      ;;
+    health)
+      run_health
+      ;;
+    summary)
+      run_summary
+      ;;
+    status)
+      run_status
+      ;;
+    *)
+      echo "Unknown command: $command" >&2
+      echo >&2
+      print_help
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
