@@ -54,7 +54,7 @@ function renderSummary(summary) {
   ];
 
   summaryCards.innerHTML = cards.map(([label, value]) => `
-    <article class="summary-card">
+    <article class="summary-card ${label === "Monitor status" ? "status-card" : ""}">
       <span class="label">${label}</span>
       <div class="value">${value}</div>
     </article>
@@ -81,7 +81,7 @@ function renderServices(rows) {
 
   if (!rows.length) {
     servicesTableBody.innerHTML = `
-      <tr>
+      <tr class="empty-row">
         <td colspan="8">No monitored services registered yet.</td>
       </tr>
     `;
@@ -93,7 +93,9 @@ function renderServices(rows) {
       <td>
         <div class="service-meta">
           <span class="service-name">${escapeHtml(row.serviceName)}</span>
-          <span>${row.enabled ? "Enabled" : "Disabled"}</span>
+          <span class="service-subline">${row.enabled ? "Enabled for polling" : "Disabled from polling"}</span>
+          <span class="runtime-meta">Last checked ${escapeHtml(formatTimestamp(row.lastCheckedAt))}</span>
+          ${row.error ? `<span class="service-error">${escapeHtml(row.error)}</span>` : ""}
         </div>
       </td>
       <td>${escapeHtml(row.environment)}</td>
@@ -101,18 +103,12 @@ function renderServices(rows) {
       <td><span class="badge muted">${escapeHtml(row.runStatus || "N/A")}</span></td>
       <td>${escapeHtml(row.lastRunDate || "-")}</td>
       <td><span class="badge ${row.openIncident ? "down" : "up"}">${row.openIncident ? "OPEN" : "CLEAR"}</span></td>
-      <td><span class="service-url">${escapeHtml(row.baseUrl)}</span></td>
+      <td class="service-url-cell"><span class="service-url service-url-value">${escapeHtml(row.baseUrl)}</span></td>
       <td>
         <div class="row-actions">
           <button class="small-button" type="button" data-action="edit" data-id="${row.id}">Edit</button>
           <button class="danger-button" type="button" data-action="delete" data-id="${row.id}">Delete</button>
         </div>
-      </td>
-    </tr>
-    <tr>
-      <td colspan="8">
-        <span class="service-url">Last checked: ${escapeHtml(row.lastCheckedAt || "-")}</span>
-        ${row.error ? `<br><span class="service-url">Error: ${escapeHtml(row.error)}</span>` : ""}
       </td>
     </tr>
   `).join("");
@@ -152,6 +148,24 @@ function fillForm(row) {
   setFormMessage("");
 }
 
+function formatTimestamp(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(parsed);
+}
+
 async function loadDashboard() {
   setFormMessage("");
 
@@ -162,7 +176,14 @@ async function loadDashboard() {
 
   renderSummary(summary);
   renderServices(overview);
-  lastRefreshText.textContent = new Date().toLocaleString();
+  lastRefreshText.textContent = new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(new Date());
 }
 
 async function submitForm(event) {
