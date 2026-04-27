@@ -1,5 +1,6 @@
 package com.dbot.agentmonitor.incident
 
+import com.dbot.agentmonitor.alert.SlackAlertService
 import com.dbot.agentmonitor.config.AppProperties
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import com.dbot.agentmonitor.domain.ServicePollResult
@@ -12,7 +13,8 @@ import org.springframework.transaction.annotation.Transactional
 class IncidentService(
     private val incidentStore: IncidentStore,
     private val serviceStatusStore: ServiceStatusStore,
-    private val appProperties: AppProperties
+    private val appProperties: AppProperties,
+    private val slackAlertService: SlackAlertService
 ) {
     companion object {
         private val EXECUTION_FAILURE_STATUSES = setOf("FAILED", "ERROR")
@@ -30,6 +32,7 @@ class IncidentService(
                     openedAt = result.checkedAt,
                     lastError = result.error ?: result.runStatus
                 )
+                slackAlertService.notifyIncidentOpened(result)
             }
 
             shouldCloseIncident(result) && hasOpenIncident -> {
@@ -39,6 +42,7 @@ class IncidentService(
                     resolvedAt = result.checkedAt,
                     lastError = null
                 )
+                slackAlertService.notifyIncidentResolved(result)
             }
         }
     }
