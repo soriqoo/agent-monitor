@@ -136,7 +136,9 @@ docker compose up -d --build
 Recommended server workflow:
 
 ```bash
-cd /home/ubuntu/ai_project/apps/agent-monitor/repo
+cd /home/ubuntu/ai_project/apps/agent-monitor/runtime
+cp ../repo/ops/agent-monitor.sh.example ./agent-monitor.sh
+chmod +x ./agent-monitor.sh
 ./agent-monitor.sh sync
 ./agent-monitor.sh deploy
 ./agent-monitor.sh status
@@ -152,14 +154,19 @@ Important network note:
 - if `agent-monitor` runs as a container, `http://127.0.0.1:8080` points back to itself, not to DMIB
 - container-to-container polling should use the shared network hostname such as `http://dmib:8080`
 
-`agent-monitor.sh` defaults to `../runtime/.env`, so it matches the recommended OCI directory shape:
+The tracked template lives in [`ops/agent-monitor.sh.example`](D:/Toy_Project/agent-monitor/ops/agent-monitor.sh.example).
+The actual runtime script should stay outside Git in `runtime/agent-monitor.sh`, next to `.env`.
+
+Runtime layout:
 
 ```text
 /home/ubuntu/ai_project/apps/agent-monitor
-  repo/
-    agent-monitor.sh
   runtime/
+    agent-monitor.sh
     .env
+  repo/
+    ops/
+      agent-monitor.sh.example
 ```
 
 Available helper commands:
@@ -171,6 +178,11 @@ Available helper commands:
 - `./agent-monitor.sh health`
 - `./agent-monitor.sh summary`
 - `./agent-monitor.sh status`
+
+Recommended convention:
+- keep project-specific runtime scripts in `runtime/<service>.sh`
+- keep the tracked sample in the repository as `ops/<service>.sh.example`
+- document the shared rule once in your common ops guidance, then keep each repository's sample concrete and service-specific
 
 ## Repository Standards
 
@@ -223,7 +235,7 @@ Current implemented capabilities:
 - repeated observation-failure promotion
 - Slack alerts for incident open and resolve
 - operational Docker baseline for OCI-style deployment
-- `agent-monitor.sh` helper for repeatable server operations
+- runtime shell template and helper workflow for repeatable server operations
 
 Next implementation order:
 - `monitored_service` CRUD and management API
