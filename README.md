@@ -229,6 +229,7 @@ Author note:
 Current implemented capabilities:
 - monitoring summary endpoint
 - seed-based DMIB registration
+- monitored service CRUD API
 - periodic health and last-run polling
 - check history and current status persistence
 - incident open and resolve lifecycle
@@ -238,7 +239,7 @@ Current implemented capabilities:
 - runtime shell template and helper workflow for repeatable server operations
 
 Next implementation order:
-- `monitored_service` CRUD and management API
 - alert policy refinement and message formatting
+- monitoring screen backed by summary and monitored service APIs
 - operational smoke-test/runbook expansion
-- optional dashboard or operator-facing admin surface
+- optional richer dashboard or operator-facing admin surface
