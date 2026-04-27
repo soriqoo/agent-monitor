@@ -136,13 +136,15 @@ h1 {
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.9fr);
   grid-template-areas:
     "summary summary"
-    "services form";
+    "services form"
+    "history history";
   gap: 24px;
 }
 
 .summary-panel,
 .services-panel,
-.form-panel {
+.form-panel,
+.history-panel {
   min-width: 0;
 }
 
@@ -156,6 +158,10 @@ h1 {
 
 .form-panel {
   grid-area: form;
+}
+
+.history-panel {
+  grid-area: history;
 }
 
 .panel {
@@ -528,7 +534,8 @@ h1 {
     grid-template-areas:
       "summary"
       "services"
-      "form";
+      "form"
+      "history";
   }
 
   .panel-header,

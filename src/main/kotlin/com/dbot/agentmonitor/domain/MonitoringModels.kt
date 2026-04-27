@@ -31,6 +31,30 @@ data class MonitoredServiceOverview(
     val openIncident: Boolean
 )
 
+data class RecentIncident(
+    val id: Long,
+    val serviceName: String,
+    val environment: String,
+    val status: String,
+    val openedAt: OffsetDateTime,
+    val resolvedAt: OffsetDateTime?,
+    val lastError: String?
+)
+
+data class RecentAlertEvent(
+    val id: Long,
+    val serviceName: String,
+    val environment: String,
+    val alertType: String,
+    val message: String,
+    val sentAt: OffsetDateTime
+)
+
+data class MonitoringHistorySnapshot(
+    val incidents: List<RecentIncident>,
+    val alerts: List<RecentAlertEvent>
+)
+
 data class LastRunSnapshot(
     val service: String?,
     val environment: String?,

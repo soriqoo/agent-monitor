@@ -95,6 +95,31 @@
 
         <div id="formMessage" class="message" aria-live="polite"></div>
       </section>
+
+      <section class="panel history-panel">
+        <div class="panel-header">
+          <h2>Recent Activity</h2>
+          <p>Latest incident transitions and outbound alert deliveries.</p>
+        </div>
+
+        <div class="history-grid">
+          <section class="history-column">
+            <div class="history-column-header">
+              <h3>Recent Incidents</h3>
+              <span>Open and resolved events</span>
+            </div>
+            <div id="incidentHistoryList" class="history-list"></div>
+          </section>
+
+          <section class="history-column">
+            <div class="history-column-header">
+              <h3>Recent Alerts</h3>
+              <span>Messages recorded after successful delivery</span>
+            </div>
+            <div id="alertHistoryList" class="history-list"></div>
+          </section>
+        </div>
+      </section>
     </main>
   </div>
 
