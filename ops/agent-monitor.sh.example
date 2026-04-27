@@ -2,9 +2,9 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEFAULT_ENV_FILE="$ROOT_DIR/../runtime/.env"
-ENV_FILE="${ENV_FILE:-$DEFAULT_ENV_FILE}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/../repo" && pwd)}"
+ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/.env}"
 DEFAULT_LOG_LINES="${LOG_LINES:-100}"
 
 load_env_file() {
@@ -19,15 +19,24 @@ load_env_file() {
 require_env_file() {
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "Missing env file: $ENV_FILE" >&2
-    echo "Set ENV_FILE or create ../runtime/.env before running this command." >&2
+    echo "Place runtime/.env next to this script or override ENV_FILE." >&2
+    exit 1
+  fi
+}
+
+require_repo_dir() {
+  if [[ ! -f "$REPO_DIR/docker-compose.yml" ]]; then
+    echo "Missing docker-compose.yml under repo dir: $REPO_DIR" >&2
+    echo "Place this script under runtime/ or override REPO_DIR." >&2
     exit 1
   fi
 }
 
 compose() {
   require_env_file
+  require_repo_dir
   (
-    cd "$ROOT_DIR"
+    cd "$REPO_DIR"
     docker compose --env-file "$ENV_FILE" "$@"
   )
 }
@@ -58,13 +67,15 @@ Commands:
 
 Environment:
   ENV_FILE    Override the runtime env file path
+  REPO_DIR    Override the checked-out repository path
   LOG_LINES   Override the default log tail size for logs
 EOF
 }
 
 run_sync() {
+  require_repo_dir
   (
-    cd "$ROOT_DIR"
+    cd "$REPO_DIR"
     git fetch origin --prune
     git switch main
     git reset --hard origin/main
