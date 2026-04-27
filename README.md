@@ -229,6 +229,7 @@ Author note:
 ## Current Status
 
 Current implemented capabilities:
+- monitoring dashboard v1 at `/`
 - monitoring summary endpoint
 - seed-based DMIB registration
 - monitored service CRUD API
@@ -242,6 +243,6 @@ Current implemented capabilities:
 
 Next implementation order:
 - alert policy refinement and message formatting
-- monitoring screen backed by summary and monitored service APIs
+- incident and alert-event views behind the dashboard
 - operational smoke-test/runbook expansion
 - optional richer dashboard or operator-facing admin surface
