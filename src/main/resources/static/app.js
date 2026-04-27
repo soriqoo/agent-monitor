@@ -1,5 +1,5 @@
 const summaryCards = document.getElementById("summaryCards");
-const servicesTableBody = document.getElementById("servicesTableBody");
+const servicesList = document.getElementById("servicesList");
 const form = document.getElementById("serviceForm");
 const formTitle = document.getElementById("formTitle");
 const submitButton = document.getElementById("submitButton");
@@ -56,7 +56,7 @@ function renderSummary(summary) {
   summaryCards.innerHTML = cards.map(([label, value]) => `
     <article class="summary-card ${label === "Monitor status" ? "status-card" : ""}">
       <span class="label">${label}</span>
-      <div class="value">${value}</div>
+      <div class="value">${label === "Monitor status" ? `<span class="status-pill">${value}</span>` : value}</div>
     </article>
   `).join("");
 }
@@ -80,37 +80,68 @@ function renderServices(rows) {
   serviceRows = rows;
 
   if (!rows.length) {
-    servicesTableBody.innerHTML = `
-      <tr class="empty-row">
-        <td colspan="8">No monitored services registered yet.</td>
-      </tr>
+    servicesList.innerHTML = `
+      <article class="empty-state">
+        <strong>No monitored services registered yet.</strong>
+        <span>Add a service from the form to start polling and incident tracking.</span>
+      </article>
     `;
     return;
   }
 
-  servicesTableBody.innerHTML = rows.map((row) => `
-    <tr>
-      <td>
+  servicesList.innerHTML = rows.map((row) => `
+    <article class="service-card">
+      <div class="service-card-top">
         <div class="service-meta">
-          <span class="service-name">${escapeHtml(row.serviceName)}</span>
+          <div class="service-title-row">
+            <span class="service-name">${escapeHtml(row.serviceName)}</span>
+            <span class="service-environment">${escapeHtml(row.environment)}</span>
+          </div>
           <span class="service-subline">${row.enabled ? "Enabled for polling" : "Disabled from polling"}</span>
-          <span class="runtime-meta">Last checked ${escapeHtml(formatTimestamp(row.lastCheckedAt))}</span>
-          ${row.error ? `<span class="service-error">${escapeHtml(row.error)}</span>` : ""}
         </div>
-      </td>
-      <td>${escapeHtml(row.environment)}</td>
-      <td><span class="badge ${badgeClass(row.healthStatus)}">${escapeHtml(row.healthStatus || "UNSEEN")}</span></td>
-      <td><span class="badge muted">${escapeHtml(row.runStatus || "N/A")}</span></td>
-      <td>${escapeHtml(row.lastRunDate || "-")}</td>
-      <td><span class="badge ${row.openIncident ? "down" : "up"}">${row.openIncident ? "OPEN" : "CLEAR"}</span></td>
-      <td class="service-url-cell"><span class="service-url service-url-value">${escapeHtml(row.baseUrl)}</span></td>
-      <td>
         <div class="row-actions">
           <button class="small-button" type="button" data-action="edit" data-id="${row.id}">Edit</button>
           <button class="danger-button" type="button" data-action="delete" data-id="${row.id}">Delete</button>
         </div>
-      </td>
-    </tr>
+      </div>
+
+      <div class="service-status-strip">
+        <div class="status-group">
+          <span class="metric-label">Health</span>
+          <span class="badge ${badgeClass(row.healthStatus)}">${escapeHtml(row.healthStatus || "UNSEEN")}</span>
+        </div>
+        <div class="status-group">
+          <span class="metric-label">Run</span>
+          <span class="badge muted">${escapeHtml(row.runStatus || "N/A")}</span>
+        </div>
+        <div class="status-group">
+          <span class="metric-label">Incident</span>
+          <span class="badge ${row.openIncident ? "down" : "up"}">${row.openIncident ? "OPEN" : "CLEAR"}</span>
+        </div>
+        <div class="status-group">
+          <span class="metric-label">Last run</span>
+          <span class="metric-value">${escapeHtml(row.lastRunDate || "-")}</span>
+        </div>
+      </div>
+
+      <div class="service-details-grid">
+        <div class="detail-block detail-wide">
+          <span class="metric-label">Base URL</span>
+          <span class="service-url">${escapeHtml(row.baseUrl)}</span>
+        </div>
+        <div class="detail-block">
+          <span class="metric-label">Last checked</span>
+          <span class="metric-value">${escapeHtml(formatTimestamp(row.lastCheckedAt))}</span>
+        </div>
+      </div>
+
+      ${row.error ? `
+        <div class="service-error-box">
+          <span class="metric-label">Latest error</span>
+          <span class="service-error">${escapeHtml(row.error)}</span>
+        </div>
+      ` : ""}
+    </article>
   `).join("");
 }
 
@@ -254,7 +285,7 @@ async function handleTableAction(event) {
 form.addEventListener("submit", submitForm);
 resetButton.addEventListener("click", resetForm);
 refreshButton.addEventListener("click", loadDashboard);
-servicesTableBody.addEventListener("click", handleTableAction);
+servicesList.addEventListener("click", handleTableAction);
 
 loadDashboard().catch((error) => {
   setFormMessage(`Dashboard load failed: ${error.message}`, "error");
