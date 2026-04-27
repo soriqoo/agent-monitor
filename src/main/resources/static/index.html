@@ -9,13 +9,18 @@
 <body>
   <div class="page-shell">
     <header class="hero">
-      <div>
+      <div class="hero-copy-block">
         <p class="eyebrow">Operational Control Tower</p>
         <h1>Agent Monitor</h1>
         <p class="hero-copy">
           Watch service health, track the last known execution state, and manage monitored services
           from one place.
         </p>
+        <div class="hero-notes">
+          <span class="hero-note">Operational dashboard</span>
+          <span class="hero-note">Service registry control</span>
+          <span class="hero-note">Incident-aware snapshot</span>
+        </div>
       </div>
       <div class="hero-actions">
         <button id="refreshButton" class="ghost-button" type="button">Refresh</button>
@@ -35,10 +40,39 @@
         <div id="summaryCards" class="summary-cards"></div>
       </section>
 
-      <section class="panel form-panel">
+      <section class="panel services-panel">
         <div class="panel-header">
-          <h2 id="formTitle">Register Service</h2>
-          <p>Create or update monitored service targets without editing seed config.</p>
+          <h2>Services</h2>
+          <p>Joined view of registry data and latest known runtime status.</p>
+        </div>
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Environment</th>
+                <th>Health</th>
+                <th>Run</th>
+                <th>Last run</th>
+                <th>Open incident</th>
+                <th>Base URL</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="servicesTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel form-panel">
+        <div class="panel-header panel-header-stack">
+          <div>
+            <h2 id="formTitle">Register Service</h2>
+            <p>Create or update monitored service targets without editing seed config.</p>
+          </div>
+          <div class="panel-aside">
+            <span>Registry changes take effect on the next polling cycle.</span>
+          </div>
         </div>
 
         <form id="serviceForm" class="service-form">
@@ -71,30 +105,6 @@
         </form>
 
         <div id="formMessage" class="message" aria-live="polite"></div>
-      </section>
-
-      <section class="panel services-panel">
-        <div class="panel-header">
-          <h2>Services</h2>
-          <p>Joined view of registry data and latest known runtime status.</p>
-        </div>
-        <div class="table-shell">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Environment</th>
-                <th>Health</th>
-                <th>Run</th>
-                <th>Last run</th>
-                <th>Open incident</th>
-                <th>Base URL</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="servicesTableBody"></tbody>
-          </table>
-        </div>
       </section>
     </main>
   </div>

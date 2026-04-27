@@ -1,6 +1,7 @@
 :root {
   --ink-1: #1c2430;
   --ink-2: #5c6775;
+  --ink-3: #7d8691;
   --line: rgba(26, 39, 54, 0.12);
   --panel: rgba(255, 248, 240, 0.84);
   --panel-strong: rgba(255, 252, 247, 0.96);
@@ -32,7 +33,7 @@ body {
 }
 
 .page-shell {
-  width: min(1200px, calc(100vw - 32px));
+  width: min(1280px, calc(100vw - 32px));
   margin: 0 auto;
   padding: 32px 0 48px;
 }
@@ -48,10 +49,14 @@ body {
 
 .hero {
   display: grid;
-  grid-template-columns: 1.6fr 0.9fr;
-  gap: 24px;
-  padding: 28px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr);
+  gap: 32px;
+  padding: 30px 30px 26px;
   margin-bottom: 24px;
+}
+
+.hero-copy-block {
+  min-width: 0;
 }
 
 .eyebrow {
@@ -65,8 +70,10 @@ body {
 
 h1 {
   margin: 0;
-  font-size: clamp(2.3rem, 4vw, 4.2rem);
-  line-height: 0.95;
+  max-width: 11ch;
+  font-size: clamp(2.4rem, 4vw, 4.8rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
 }
 
 .hero-copy,
@@ -77,16 +84,34 @@ h1 {
 }
 
 .hero-copy {
-  max-width: 720px;
+  max-width: 52ch;
   margin: 14px 0 0;
   font-size: 1.05rem;
   line-height: 1.6;
 }
 
+.hero-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.hero-note {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(26, 39, 54, 0.08);
+  color: var(--ink-2);
+  font-size: 0.9rem;
+}
+
 .hero-actions {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: start;
   gap: 16px;
   align-items: stretch;
 }
@@ -102,17 +127,35 @@ h1 {
   display: block;
   margin-top: 6px;
   font-size: 1rem;
+  line-height: 1.45;
+  word-break: keep-all;
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 0.9fr;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.9fr);
+  grid-template-areas:
+    "summary summary"
+    "services form";
   gap: 24px;
 }
 
 .summary-panel,
+.services-panel,
+.form-panel {
+  min-width: 0;
+}
+
+.summary-panel {
+  grid-area: summary;
+}
+
 .services-panel {
-  grid-column: 1 / -1;
+  grid-area: services;
+}
+
+.form-panel {
+  grid-area: form;
 }
 
 .panel {
@@ -127,6 +170,14 @@ h1 {
   margin-bottom: 18px;
 }
 
+.panel-header-stack {
+  align-items: start;
+}
+
+.panel-header-stack > div:first-child {
+  min-width: 0;
+}
+
 .panel-header h2 {
   margin: 0;
   font-size: 1.6rem;
@@ -135,6 +186,18 @@ h1 {
 .panel-header p {
   margin: 0;
   font-size: 0.95rem;
+  max-width: 38ch;
+}
+
+.panel-aside {
+  max-width: 22ch;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(26, 39, 54, 0.08);
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .summary-cards {
@@ -158,9 +221,15 @@ h1 {
 }
 
 .summary-card .value {
-  font-size: 2.1rem;
+  font-size: clamp(1.9rem, 2.6vw, 2.8rem);
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.05;
+  word-break: break-word;
+}
+
+.summary-card.status-card .value {
+  font-size: clamp(1.3rem, 2vw, 2.1rem);
+  letter-spacing: -0.02em;
 }
 
 .service-form {
@@ -246,6 +315,7 @@ h1 {
   min-height: 24px;
   margin-top: 16px;
   font-size: 0.95rem;
+  line-height: 1.45;
 }
 
 .message.error {
@@ -258,12 +328,14 @@ h1 {
 
 .table-shell {
   overflow-x: auto;
+  margin-inline: -4px;
+  padding-inline: 4px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 960px;
+  min-width: 860px;
 }
 
 thead th {
@@ -276,7 +348,7 @@ thead th {
 }
 
 tbody td {
-  padding: 14px 10px 14px 0;
+  padding: 16px 12px 16px 0;
   border-top: 1px solid rgba(26, 39, 54, 0.08);
   vertical-align: top;
 }
@@ -317,22 +389,82 @@ tbody td {
 
 .service-meta {
   display: grid;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .service-name {
   font-weight: 700;
+  font-size: 1rem;
+}
+
+.service-subline,
+.runtime-meta,
+.service-url,
+.service-error {
+  color: var(--ink-2);
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .service-url {
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.service-url-cell {
+  min-width: 0;
+}
+
+.service-url-value {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.runtime-meta {
+  margin-top: 8px;
+  color: var(--ink-3);
+}
+
+.service-error {
+  margin-top: 8px;
+  color: var(--down);
+}
+
+.empty-row td {
   color: var(--ink-2);
-  word-break: break-all;
+  padding: 26px 0 10px;
+}
+
+.services-panel .panel-header p {
+  max-width: 42ch;
 }
 
 @media (max-width: 920px) {
   .hero,
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid {
+    grid-template-areas:
+      "summary"
+      "services"
+      "form";
+  }
+
+  .panel-header,
+  .panel-header-stack {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .panel-aside {
+    max-width: none;
+    width: 100%;
   }
 
   .summary-cards {
@@ -352,7 +484,19 @@ tbody td {
     padding: 18px;
   }
 
+  h1 {
+    max-width: none;
+  }
+
+  .hero-copy {
+    font-size: 0.98rem;
+  }
+
   .summary-cards {
     grid-template-columns: 1fr;
+  }
+
+  .timestamp-card strong {
+    font-size: 0.94rem;
   }
 }
