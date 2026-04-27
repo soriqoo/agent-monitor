@@ -1,5 +1,5 @@
 const summaryCards = document.getElementById("summaryCards");
-const servicesTableBody = document.getElementById("servicesTableBody");
+const servicesList = document.getElementById("servicesList");
 const form = document.getElementById("serviceForm");
 const formTitle = document.getElementById("formTitle");
 const submitButton = document.getElementById("submitButton");
@@ -56,7 +56,7 @@ function renderSummary(summary) {
   summaryCards.innerHTML = cards.map(([label, value]) => `
     <article class="summary-card ${label === "Monitor status" ? "status-card" : ""}">
       <span class="label">${label}</span>
-      <div class="value">${value}</div>
+      <div class="value">${label === "Monitor status" ? `<span class="status-pill">${value}</span>` : value}</div>
     </article>
   `).join("");
 }
@@ -88,9 +88,9 @@ function renderServices(rows) {
     return;
   }
 
-  servicesTableBody.innerHTML = rows.map((row) => `
-    <tr>
-      <td>
+  servicesList.innerHTML = rows.map((row) => `
+    <article class="service-card">
+      <div class="service-card-top">
         <div class="service-meta">
           <span class="service-name">${escapeHtml(row.serviceName)}</span>
           <span class="service-subline">${row.enabled ? "Enabled for polling" : "Disabled from polling"}</span>
@@ -254,7 +254,7 @@ async function handleTableAction(event) {
 form.addEventListener("submit", submitForm);
 resetButton.addEventListener("click", resetForm);
 refreshButton.addEventListener("click", loadDashboard);
-servicesTableBody.addEventListener("click", handleTableAction);
+servicesList.addEventListener("click", handleTableAction);
 
 loadDashboard().catch((error) => {
   setFormMessage(`Dashboard load failed: ${error.message}`, "error");
