@@ -17,6 +17,20 @@ data class MonitoredService(
     val enabled: Boolean
 )
 
+data class MonitoredServiceOverview(
+    val id: Long,
+    val serviceName: String,
+    val baseUrl: String,
+    val environment: String,
+    val enabled: Boolean,
+    val healthStatus: String?,
+    val runStatus: String?,
+    val lastRunDate: String?,
+    val lastCheckedAt: OffsetDateTime?,
+    val error: String?,
+    val openIncident: Boolean
+)
+
 data class LastRunSnapshot(
     val service: String?,
     val environment: String?,

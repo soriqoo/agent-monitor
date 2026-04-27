@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Monitor</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Operational Control Tower</p>
+        <h1>Agent Monitor</h1>
+        <p class="hero-copy">
+          Watch service health, track the last known execution state, and manage monitored services
+          from one place.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <button id="refreshButton" class="ghost-button" type="button">Refresh</button>
+        <div class="timestamp-card">
+          <span class="timestamp-label">Last refresh</span>
+          <strong id="lastRefreshText">Not loaded yet</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <section class="panel summary-panel">
+        <div class="panel-header">
+          <h2>Summary</h2>
+          <p>Current service-wide monitoring snapshot</p>
+        </div>
+        <div id="summaryCards" class="summary-cards"></div>
+      </section>
+
+      <section class="panel form-panel">
+        <div class="panel-header">
+          <h2 id="formTitle">Register Service</h2>
+          <p>Create or update monitored service targets without editing seed config.</p>
+        </div>
+
+        <form id="serviceForm" class="service-form">
+          <input id="serviceId" type="hidden">
+
+          <label>
+            <span>Service name</span>
+            <input id="serviceName" name="serviceName" maxlength="100" required>
+          </label>
+
+          <label>
+            <span>Base URL</span>
+            <input id="baseUrl" name="baseUrl" maxlength="255" placeholder="http://service:8080" required>
+          </label>
+
+          <label>
+            <span>Environment</span>
+            <input id="environment" name="environment" maxlength="50" required>
+          </label>
+
+          <label class="checkbox-row">
+            <input id="enabled" name="enabled" type="checkbox" checked>
+            <span>Enabled for polling</span>
+          </label>
+
+          <div class="form-actions">
+            <button id="submitButton" class="primary-button" type="submit">Create service</button>
+            <button id="resetButton" class="ghost-button" type="button">Reset</button>
+          </div>
+        </form>
+
+        <div id="formMessage" class="message" aria-live="polite"></div>
+      </section>
+
+      <section class="panel services-panel">
+        <div class="panel-header">
+          <h2>Services</h2>
+          <p>Joined view of registry data and latest known runtime status.</p>
+        </div>
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Environment</th>
+                <th>Health</th>
+                <th>Run</th>
+                <th>Last run</th>
+                <th>Open incident</th>
+                <th>Base URL</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="servicesTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

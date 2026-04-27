@@ -1,6 +1,7 @@
 package com.dbot.agentmonitor.registry
 
 import com.dbot.agentmonitor.domain.MonitoredService
+import com.dbot.agentmonitor.domain.MonitoredServiceOverview
 import com.dbot.agentmonitor.store.MonitoredServiceStore
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -28,6 +29,11 @@ class MonitoredServiceController(
     @GetMapping
     fun list(): List<MonitoredService> {
         return monitoredServiceStore.findAll()
+    }
+
+    @GetMapping("/overview")
+    fun overview(): List<MonitoredServiceOverview> {
+        return monitoredServiceStore.findAllOverviews()
     }
 
     @PostMapping

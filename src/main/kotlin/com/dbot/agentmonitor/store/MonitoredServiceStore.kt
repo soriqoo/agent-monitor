@@ -1,6 +1,7 @@
 package com.dbot.agentmonitor.store
 
 import com.dbot.agentmonitor.domain.MonitoredService
+import com.dbot.agentmonitor.domain.MonitoredServiceOverview
 import org.springframework.jdbc.core.JdbcTemplate
 
 class MonitoredServiceStore(
@@ -76,6 +77,52 @@ class MonitoredServiceStore(
                 baseUrl = rs.getString("base_url"),
                 environment = rs.getString("environment"),
                 enabled = rs.getBoolean("enabled")
+            )
+        }
+    }
+
+    fun findAllOverviews(): List<MonitoredServiceOverview> {
+        return jdbcTemplate.query(
+            """
+            SELECT ms.id,
+                   ms.service_name,
+                   ms.base_url,
+                   ms.environment,
+                   ms.enabled,
+                   scs.health_status,
+                   scs.run_status,
+                   scs.last_run_date,
+                   scs.last_checked_at,
+                   scs.error,
+                   CASE
+                     WHEN EXISTS (
+                       SELECT 1
+                       FROM incident i
+                       WHERE i.service_name = ms.service_name
+                         AND i.environment = ms.environment
+                         AND i.status = 'OPEN'
+                     ) THEN TRUE
+                     ELSE FALSE
+                   END AS open_incident
+            FROM monitored_service ms
+            LEFT JOIN service_current_status scs
+              ON scs.service_name = ms.service_name
+             AND scs.environment = ms.environment
+            ORDER BY ms.id ASC
+            """.trimIndent()
+        ) { rs, _ ->
+            MonitoredServiceOverview(
+                id = rs.getLong("id"),
+                serviceName = rs.getString("service_name"),
+                baseUrl = rs.getString("base_url"),
+                environment = rs.getString("environment"),
+                enabled = rs.getBoolean("enabled"),
+                healthStatus = rs.getString("health_status"),
+                runStatus = rs.getString("run_status"),
+                lastRunDate = rs.getString("last_run_date"),
+                lastCheckedAt = rs.getObject("last_checked_at", java.time.OffsetDateTime::class.java),
+                error = rs.getString("error"),
+                openIncident = rs.getBoolean("open_incident")
             )
         }
     }
