@@ -28,6 +28,12 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("Agent Monitor")) {
                     "Dashboard page should contain the Agent Monitor title."
                 }
+                require(body.contains("Recent Activity")) {
+                    "Dashboard page should contain the recent activity section."
+                }
+                require(body.contains("Recent Incidents")) {
+                    "Dashboard page should contain the recent incidents heading."
+                }
             }
     }
 }

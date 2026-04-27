@@ -1,5 +1,7 @@
 const summaryCards = document.getElementById("summaryCards");
 const servicesList = document.getElementById("servicesList");
+const incidentHistoryList = document.getElementById("incidentHistoryList");
+const alertHistoryList = document.getElementById("alertHistoryList");
 const form = document.getElementById("serviceForm");
 const formTitle = document.getElementById("formTitle");
 const submitButton = document.getElementById("submitButton");
@@ -114,6 +116,73 @@ function renderServices(rows) {
   `).join("");
 }
 
+function renderHistory(history) {
+  renderIncidentHistory(history.incidents || []);
+  renderAlertHistory(history.alerts || []);
+}
+
+function renderIncidentHistory(items) {
+  if (!items.length) {
+    incidentHistoryList.innerHTML = renderEmptyHistory(
+      "No incidents recorded yet.",
+      "New incidents and recoveries will appear here."
+    );
+    return;
+  }
+
+  incidentHistoryList.innerHTML = items.map((item) => `
+    <article class="history-item">
+      <div class="history-item-top">
+        <div class="history-title-block">
+          <span class="history-title">${escapeHtml(item.serviceName)}</span>
+          <span class="history-subtitle">${escapeHtml(item.environment)}</span>
+        </div>
+        <span class="badge ${item.status === "OPEN" ? "down" : "up"}">${escapeHtml(item.status)}</span>
+      </div>
+      <div class="history-meta-lines">
+        <span>Opened ${escapeHtml(formatDateTime(item.openedAt))}</span>
+        ${item.resolvedAt ? `<span>Resolved ${escapeHtml(formatDateTime(item.resolvedAt))}</span>` : `<span>Still open</span>`}
+      </div>
+      ${item.lastError ? `<p class="history-copy">${escapeHtml(item.lastError)}</p>` : ""}
+    </article>
+  `).join("");
+}
+
+function renderAlertHistory(items) {
+  if (!items.length) {
+    alertHistoryList.innerHTML = renderEmptyHistory(
+      "No alert deliveries recorded yet.",
+      "Successful Slack alert sends will appear here."
+    );
+    return;
+  }
+
+  alertHistoryList.innerHTML = items.map((item) => `
+    <article class="history-item">
+      <div class="history-item-top">
+        <div class="history-title-block">
+          <span class="history-title">${escapeHtml(item.serviceName)}</span>
+          <span class="history-subtitle">${escapeHtml(item.environment)}</span>
+        </div>
+        <span class="badge muted">${escapeHtml(formatAlertType(item.alertType))}</span>
+      </div>
+      <div class="history-meta-lines">
+        <span>Sent ${escapeHtml(formatDateTime(item.sentAt))}</span>
+      </div>
+      <p class="history-copy">${escapeHtml(item.message)}</p>
+    </article>
+  `).join("");
+}
+
+function renderEmptyHistory(title, copy) {
+  return `
+    <article class="empty-state history-empty-state">
+      <strong>${escapeHtml(title)}</strong>
+      <span>${escapeHtml(copy)}</span>
+    </article>
+  `;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -166,16 +235,43 @@ function formatTimestamp(value) {
   }).format(parsed);
 }
 
+function formatDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(parsed);
+}
+
+function formatAlertType(value) {
+  return String(value || "ALERT")
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 async function loadDashboard() {
   setFormMessage("");
 
-  const [summary, overview] = await Promise.all([
+  const [summary, overview, history] = await Promise.all([
     fetchJson("/internal/monitoring/summary"),
-    fetchJson("/api/monitored-services/overview")
+    fetchJson("/api/monitored-services/overview"),
+    fetchJson("/api/monitoring/history?limit=6")
   ]);
 
   renderSummary(summary);
   renderServices(overview);
+  renderHistory(history);
   lastRefreshText.textContent = new Intl.DateTimeFormat(undefined, {
     year: "numeric",
     month: "short",
