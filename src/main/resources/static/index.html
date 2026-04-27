@@ -43,24 +43,13 @@
       <section class="panel services-panel">
         <div class="panel-header">
           <h2>Services</h2>
-          <p>Joined view of registry data and latest known runtime status.</p>
+          <p>Runtime snapshot with control actions for each monitored service.</p>
         </div>
-        <div class="table-shell">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Environment</th>
-                <th>Health</th>
-                <th>Run</th>
-                <th>Last run</th>
-                <th>Open incident</th>
-                <th>Base URL</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="servicesTableBody"></tbody>
-          </table>
+        <div class="services-summary-row">
+          <span>Primary operator view</span>
+          <span>Status, runtime, and incident state in one place</span>
+        </div>
+        <div id="servicesList" class="services-list">
         </div>
       </section>
 
@@ -68,7 +57,7 @@
         <div class="panel-header panel-header-stack">
           <div>
             <h2 id="formTitle">Register Service</h2>
-            <p>Create or update monitored service targets without editing seed config.</p>
+            <p>Create or update targets without touching seed config.</p>
           </div>
           <div class="panel-aside">
             <span>Registry changes take effect on the next polling cycle.</span>
