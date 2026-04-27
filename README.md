@@ -133,6 +133,16 @@ docker network create bot-monitoring
 docker compose up -d --build
 ```
 
+Recommended server workflow:
+
+```bash
+cd /home/ubuntu/ai_project/apps/agent-monitor/repo
+./agent-monitor.sh sync
+./agent-monitor.sh deploy
+./agent-monitor.sh status
+./agent-monitor.sh logs
+```
+
 Default Docker expectation:
 - `agent-monitor` host port: `127.0.0.1:18080`
 - `agent-monitor` DB host port: `127.0.0.1:15433`
@@ -141,6 +151,26 @@ Default Docker expectation:
 Important network note:
 - if `agent-monitor` runs as a container, `http://127.0.0.1:8080` points back to itself, not to DMIB
 - container-to-container polling should use the shared network hostname such as `http://dmib:8080`
+
+`agent-monitor.sh` defaults to `../runtime/.env`, so it matches the recommended OCI directory shape:
+
+```text
+/home/ubuntu/ai_project/apps/agent-monitor
+  repo/
+    agent-monitor.sh
+  runtime/
+    .env
+```
+
+Available helper commands:
+- `./agent-monitor.sh sync`
+- `./agent-monitor.sh deploy`
+- `./agent-monitor.sh ps`
+- `./agent-monitor.sh logs`
+- `./agent-monitor.sh logs-follow`
+- `./agent-monitor.sh health`
+- `./agent-monitor.sh summary`
+- `./agent-monitor.sh status`
 
 ## Repository Standards
 
@@ -184,16 +214,19 @@ Author note:
 
 ## Current Status
 
-Current scaffolded capabilities:
+Current implemented capabilities:
 - monitoring summary endpoint
-- monitored service store
-- polling scheduler skeleton
-- database schema draft
-- documentation set for planning, research, study, runbook, and handoff
+- seed-based DMIB registration
+- periodic health and last-run polling
+- check history and current status persistence
+- incident open and resolve lifecycle
+- repeated observation-failure promotion
+- Slack alerts for incident open and resolve
+- operational Docker baseline for OCI-style deployment
+- `agent-monitor.sh` helper for repeatable server operations
 
 Next implementation order:
-- seed-based DMIB registration
-- real HTTP polling
-- status/history persistence
-- incident open/close flow
-- Slack alert integration
+- `monitored_service` CRUD and management API
+- alert policy refinement and message formatting
+- operational smoke-test/runbook expansion
+- optional dashboard or operator-facing admin surface
