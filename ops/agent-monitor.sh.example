@@ -3,9 +3,38 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/../repo" && pwd)}"
-ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/.env}"
 DEFAULT_LOG_LINES="${LOG_LINES:-100}"
+
+default_repo_dir() {
+  if [[ -f "$SCRIPT_DIR/docker-compose.yml" ]]; then
+    echo "$SCRIPT_DIR"
+    return
+  fi
+
+  if [[ -f "$SCRIPT_DIR/../repo/docker-compose.yml" ]]; then
+    echo "$(cd "$SCRIPT_DIR/../repo" && pwd)"
+    return
+  fi
+
+  echo "$SCRIPT_DIR"
+}
+
+default_env_file() {
+  if [[ -f "$SCRIPT_DIR/.env" ]]; then
+    echo "$SCRIPT_DIR/.env"
+    return
+  fi
+
+  if [[ -f "$SCRIPT_DIR/../runtime/.env" ]]; then
+    echo "$(cd "$SCRIPT_DIR/../runtime" && pwd)/.env"
+    return
+  fi
+
+  echo "$SCRIPT_DIR/.env"
+}
+
+REPO_DIR="${REPO_DIR:-$(default_repo_dir)}"
+ENV_FILE="${ENV_FILE:-$(default_env_file)}"
 
 load_env_file() {
   if [[ -f "$ENV_FILE" ]]; then
@@ -27,7 +56,10 @@ require_env_file() {
 require_repo_dir() {
   if [[ ! -f "$REPO_DIR/docker-compose.yml" ]]; then
     echo "Missing docker-compose.yml under repo dir: $REPO_DIR" >&2
-    echo "Place this script under runtime/ or override REPO_DIR." >&2
+    echo "Supported layouts:" >&2
+    echo "  1) runtime/agent-monitor.sh next to runtime/.env" >&2
+    echo "  2) repo/agent-monitor.sh with repo/../runtime/.env" >&2
+    echo "Or override REPO_DIR explicitly." >&2
     exit 1
   fi
 }
@@ -69,6 +101,10 @@ Environment:
   ENV_FILE    Override the runtime env file path
   REPO_DIR    Override the checked-out repository path
   LOG_LINES   Override the default log tail size for logs
+
+Path resolution:
+  - if the script is placed under runtime/, it uses ../repo and ./.env
+  - if the script is placed under repo/, it uses ./docker-compose.yml and ../runtime/.env
 EOF
 }
 

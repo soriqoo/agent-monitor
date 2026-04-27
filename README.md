@@ -156,6 +156,7 @@ Important network note:
 
 The tracked template lives in [`ops/agent-monitor.sh.example`](D:/Toy_Project/agent-monitor/ops/agent-monitor.sh.example).
 The actual runtime script should stay outside Git in `runtime/agent-monitor.sh`, next to `.env`.
+The template also supports the common fallback case where the script still lives under `repo/` and should read `../runtime/.env`.
 
 Runtime layout:
 
@@ -183,6 +184,7 @@ Recommended convention:
 - keep project-specific runtime scripts in `runtime/<service>.sh`
 - keep the tracked sample in the repository as `ops/<service>.sh.example`
 - document the shared rule once in your common ops guidance, then keep each repository's sample concrete and service-specific
+- if a copied script drifts behind, replace it from the tracked sample before debugging path issues
 
 ## Repository Standards
 
