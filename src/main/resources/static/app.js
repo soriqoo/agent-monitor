@@ -174,7 +174,7 @@ function renderIncidentHistory(items) {
         <span>Opened ${escapeHtml(formatDateTime(item.openedAt))}</span>
         ${item.resolvedAt ? `<span>Resolved ${escapeHtml(formatDateTime(item.resolvedAt))}</span>` : `<span>Still open</span>`}
       </div>
-      ${item.lastError ? `<p class="history-copy">${escapeHtml(item.lastError)}</p>` : ""}
+      ${renderHistoryCopy(item.lastError)}
     </article>
   `).join("");
 }
@@ -200,7 +200,7 @@ function renderAlertHistory(items) {
       <div class="history-meta-lines">
         <span>Sent ${escapeHtml(formatDateTime(item.sentAt))}</span>
       </div>
-      <p class="history-copy">${escapeHtml(item.message)}</p>
+      ${renderHistoryCopy(item.message)}
     </article>
   `).join("");
 }
@@ -211,6 +211,28 @@ function renderEmptyHistory(title, copy) {
       <strong>${escapeHtml(title)}</strong>
       <span>${escapeHtml(copy)}</span>
     </article>
+  `;
+}
+
+function renderHistoryCopy(value) {
+  if (!value) {
+    return "";
+  }
+
+  const message = String(value).trim();
+  const escaped = escapeHtml(message);
+
+  if (message.length <= 140) {
+    return `<p class="history-copy">${escaped}</p>`;
+  }
+
+  return `
+    <div class="history-copy-block" data-copy-state="collapsed">
+      <p class="history-copy history-copy-clamped">${escaped}</p>
+      <button class="history-toggle-button" type="button" data-action="toggle-history-copy">
+        Show full message
+      </button>
+    </div>
   `;
 }
 
@@ -378,10 +400,31 @@ async function handleTableAction(event) {
   }
 }
 
+function handleHistoryAction(event) {
+  const button = event.target.closest("button[data-action='toggle-history-copy']");
+  if (!button) {
+    return;
+  }
+
+  const copyBlock = button.closest(".history-copy-block");
+  if (!copyBlock) {
+    return;
+  }
+
+  const copy = copyBlock.querySelector(".history-copy");
+  const expanded = copyBlock.dataset.copyState === "expanded";
+
+  copyBlock.dataset.copyState = expanded ? "collapsed" : "expanded";
+  copy.classList.toggle("history-copy-clamped", expanded);
+  button.textContent = expanded ? "Show full message" : "Collapse";
+}
+
 form.addEventListener("submit", submitForm);
 resetButton.addEventListener("click", resetForm);
 refreshButton.addEventListener("click", loadDashboard);
 servicesList.addEventListener("click", handleTableAction);
+incidentHistoryList.addEventListener("click", handleHistoryAction);
+alertHistoryList.addEventListener("click", handleHistoryAction);
 
 loadDashboard().catch((error) => {
   setFormMessage(`Dashboard load failed: ${error.message}`, "error");
