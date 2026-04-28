@@ -16,7 +16,17 @@ const baseUrlInput = document.getElementById("baseUrl");
 const environmentInput = document.getElementById("environment");
 const enabledInput = document.getElementById("enabled");
 
+const HISTORY_PREVIEW_COUNT = 2;
+
 let serviceRows = [];
+let historyState = {
+  incidentsExpanded: false,
+  alertsExpanded: false
+};
+let latestHistory = {
+  incidents: [],
+  alerts: []
+};
 
 async function fetchJson(url, options = {}) {
   const response = await fetch(url, {
@@ -148,8 +158,12 @@ function renderServices(rows) {
 }
 
 function renderHistory(history) {
-  renderIncidentHistory(history.incidents || []);
-  renderAlertHistory(history.alerts || []);
+  latestHistory = {
+    incidents: history.incidents || [],
+    alerts: history.alerts || []
+  };
+  renderIncidentHistory(latestHistory.incidents);
+  renderAlertHistory(latestHistory.alerts);
 }
 
 function renderIncidentHistory(items) {
@@ -161,7 +175,10 @@ function renderIncidentHistory(items) {
     return;
   }
 
-  incidentHistoryList.innerHTML = items.map((item) => `
+  const visibleItems = historyState.incidentsExpanded ? items : items.slice(0, HISTORY_PREVIEW_COUNT);
+
+  incidentHistoryList.innerHTML = `
+    ${visibleItems.map((item) => `
     <article class="history-item">
       <div class="history-item-top">
         <div class="history-title-block">
@@ -176,7 +193,9 @@ function renderIncidentHistory(items) {
       </div>
       ${renderHistoryCopy(item.lastError)}
     </article>
-  `).join("");
+  `).join("")}
+    ${renderHistoryListToggle(items.length, historyState.incidentsExpanded, "incidents")}
+  `;
 }
 
 function renderAlertHistory(items) {
@@ -188,7 +207,10 @@ function renderAlertHistory(items) {
     return;
   }
 
-  alertHistoryList.innerHTML = items.map((item) => `
+  const visibleItems = historyState.alertsExpanded ? items : items.slice(0, HISTORY_PREVIEW_COUNT);
+
+  alertHistoryList.innerHTML = `
+    ${visibleItems.map((item) => `
     <article class="history-item">
       <div class="history-item-top">
         <div class="history-title-block">
@@ -202,7 +224,9 @@ function renderAlertHistory(items) {
       </div>
       ${renderHistoryCopy(item.message)}
     </article>
-  `).join("");
+  `).join("")}
+    ${renderHistoryListToggle(items.length, historyState.alertsExpanded, "alerts")}
+  `;
 }
 
 function renderEmptyHistory(title, copy) {
@@ -233,6 +257,18 @@ function renderHistoryCopy(value) {
         Show full message
       </button>
     </div>
+  `;
+}
+
+function renderHistoryListToggle(totalCount, expanded, section) {
+  if (totalCount <= HISTORY_PREVIEW_COUNT) {
+    return "";
+  }
+
+  return `
+    <button class="history-list-toggle" type="button" data-action="toggle-history-list" data-section="${section}">
+      ${expanded ? "Show fewer items" : `View all ${totalCount} items`}
+    </button>
   `;
 }
 
@@ -401,6 +437,19 @@ async function handleTableAction(event) {
 }
 
 function handleHistoryAction(event) {
+  const listButton = event.target.closest("button[data-action='toggle-history-list']");
+  if (listButton) {
+    const isIncidents = listButton.dataset.section === "incidents";
+    if (isIncidents) {
+      historyState.incidentsExpanded = !historyState.incidentsExpanded;
+      renderIncidentHistory(latestHistory.incidents);
+    } else {
+      historyState.alertsExpanded = !historyState.alertsExpanded;
+      renderAlertHistory(latestHistory.alerts);
+    }
+    return;
+  }
+
   const button = event.target.closest("button[data-action='toggle-history-copy']");
   if (!button) {
     return;
