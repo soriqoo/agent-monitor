@@ -563,6 +563,22 @@ h1 {
   gap: 12px;
 }
 
+.history-list-toggle {
+  justify-self: start;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent-deep);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-list-toggle:hover {
+  text-decoration: underline;
+}
+
 .history-item {
   display: grid;
   gap: 10px;
