@@ -55,6 +55,12 @@ data class MonitoringHistorySnapshot(
     val alerts: List<RecentAlertEvent>
 )
 
+data class MonitoredServiceDetailSnapshot(
+    val service: MonitoredServiceOverview,
+    val incidents: List<RecentIncident>,
+    val alerts: List<RecentAlertEvent>
+)
+
 data class LastRunSnapshot(
     val service: String?,
     val environment: String?,

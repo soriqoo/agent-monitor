@@ -1,7 +1,10 @@
 package com.dbot.agentmonitor.registry
 
 import com.dbot.agentmonitor.domain.MonitoredService
+import com.dbot.agentmonitor.domain.MonitoredServiceDetailSnapshot
 import com.dbot.agentmonitor.domain.MonitoredServiceOverview
+import com.dbot.agentmonitor.store.AlertEventStore
+import com.dbot.agentmonitor.store.IncidentStore
 import com.dbot.agentmonitor.store.MonitoredServiceStore
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
@@ -24,7 +28,9 @@ import org.springframework.web.server.ResponseStatusException
 @Validated
 @RequestMapping("/api/monitored-services")
 class MonitoredServiceController(
-    private val monitoredServiceStore: MonitoredServiceStore
+    private val monitoredServiceStore: MonitoredServiceStore,
+    private val incidentStore: IncidentStore,
+    private val alertEventStore: AlertEventStore
 ) {
     @GetMapping
     fun list(): List<MonitoredService> {
@@ -34,6 +40,25 @@ class MonitoredServiceController(
     @GetMapping("/overview")
     fun overview(): List<MonitoredServiceOverview> {
         return monitoredServiceStore.findAllOverviews()
+    }
+
+    @GetMapping("/{id}/detail")
+    fun detail(
+        @PathVariable id: Long,
+        @RequestParam(defaultValue = "4") limit: Int
+    ): MonitoredServiceDetailSnapshot {
+        val boundedLimit = limit.coerceIn(1, 10)
+        val service = monitoredServiceStore.findOverviewById(id)
+            ?: throw ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Monitored service not found. id=$id"
+            )
+
+        return MonitoredServiceDetailSnapshot(
+            service = service,
+            incidents = incidentStore.findRecentForService(service.serviceName, service.environment, boundedLimit),
+            alerts = alertEventStore.findRecentForService(service.serviceName, service.environment, boundedLimit)
+        )
     }
 
     @PostMapping

@@ -1,5 +1,6 @@
 const summaryCards = document.getElementById("summaryCards");
 const servicesList = document.getElementById("servicesList");
+const serviceDetailPanel = document.getElementById("serviceDetailPanel");
 const incidentHistoryList = document.getElementById("incidentHistoryList");
 const alertHistoryList = document.getElementById("alertHistoryList");
 const form = document.getElementById("serviceForm");
@@ -19,6 +20,7 @@ const enabledInput = document.getElementById("enabled");
 const HISTORY_PREVIEW_COUNT = 2;
 
 let serviceRows = [];
+let selectedServiceId = null;
 let historyState = {
   incidentsExpanded: false,
   alertsExpanded: false
@@ -102,7 +104,7 @@ function renderServices(rows) {
   }
 
   servicesList.innerHTML = rows.map((row) => `
-    <article class="service-card">
+    <article class="service-card ${selectedServiceId === row.id ? "is-selected" : ""}" data-service-id="${row.id}">
       <div class="service-card-top">
         <div class="service-meta">
           <div class="service-title-row">
@@ -155,6 +157,117 @@ function renderServices(rows) {
       ` : ""}
     </article>
   `).join("");
+}
+
+function renderServiceDetail(detail) {
+  const service = detail.service;
+  const incidents = detail.incidents || [];
+  const alerts = detail.alerts || [];
+
+  serviceDetailPanel.innerHTML = `
+    <article class="detail-shell">
+      <div class="detail-summary-card">
+        <div class="detail-summary-top">
+          <div class="detail-title-block">
+            <div class="service-title-row">
+              <span class="service-name">${escapeHtml(service.serviceName)}</span>
+              <span class="service-environment">${escapeHtml(service.environment)}</span>
+            </div>
+            <span class="service-subline">${service.enabled ? "Enabled for polling" : "Disabled from polling"}</span>
+          </div>
+          <span class="badge ${service.openIncident ? "down" : "up"}">${service.openIncident ? "OPEN INCIDENT" : "CLEAR"}</span>
+        </div>
+
+        <div class="detail-metric-strip">
+          <div class="status-group">
+            <span class="metric-label">Health</span>
+            <span class="badge ${badgeClass(service.healthStatus)}">${escapeHtml(service.healthStatus || "UNSEEN")}</span>
+          </div>
+          <div class="status-group">
+            <span class="metric-label">Run</span>
+            <span class="badge muted">${escapeHtml(service.runStatus || "N/A")}</span>
+          </div>
+          <div class="status-group">
+            <span class="metric-label">Last run</span>
+            <span class="metric-value">${escapeHtml(service.lastRunDate || "-")}</span>
+          </div>
+          <div class="status-group">
+            <span class="metric-label">Last checked</span>
+            <span class="metric-value">${escapeHtml(formatTimestamp(service.lastCheckedAt))}</span>
+          </div>
+        </div>
+
+        <div class="detail-summary-grid">
+          <div class="detail-block detail-wide">
+            <span class="metric-label">Base URL</span>
+            <span class="service-url">${escapeHtml(service.baseUrl)}</span>
+          </div>
+          <div class="detail-block">
+            <span class="metric-label">Recent incidents</span>
+            <span class="metric-value">${incidents.length}</span>
+          </div>
+          <div class="detail-block">
+            <span class="metric-label">Recent alerts</span>
+            <span class="metric-value">${alerts.length}</span>
+          </div>
+        </div>
+
+        ${service.error ? `
+          <div class="service-error-box">
+            <span class="metric-label">Latest error</span>
+            <span class="service-error">${escapeHtml(service.error)}</span>
+          </div>
+        ` : ""}
+      </div>
+
+      <div class="detail-history-grid">
+        <section class="detail-history-column">
+          <div class="history-column-header">
+            <h3>Service Incidents</h3>
+            <span>${incidents.length ? `Latest ${incidents.length} records` : "No recent incidents"}</span>
+          </div>
+          <div class="history-list">
+            ${incidents.length ? incidents.map((item) => `
+              <article class="history-item detail-history-item">
+                <div class="history-item-top">
+                  <div class="history-title-block">
+                    <span class="history-title">${escapeHtml(item.status === "OPEN" ? "Incident opened" : "Incident resolved")}</span>
+                    <span class="history-subtitle">${escapeHtml(formatDateTime(item.openedAt))}</span>
+                  </div>
+                  <span class="badge ${item.status === "OPEN" ? "down" : "up"}">${escapeHtml(item.status)}</span>
+                </div>
+                <div class="history-meta-lines">
+                  ${item.resolvedAt ? `<span>Resolved ${escapeHtml(formatDateTime(item.resolvedAt))}</span>` : `<span>Still open</span>`}
+                </div>
+                ${renderHistoryCopy(item.lastError)}
+              </article>
+            `).join("") : renderEmptyHistory("No incidents for this service yet.", "Incident lifecycle entries will appear here.")}
+          </div>
+        </section>
+
+        <section class="detail-history-column">
+          <div class="history-column-header">
+            <h3>Service Alerts</h3>
+            <span>${alerts.length ? `Latest ${alerts.length} deliveries` : "No recent alerts"}</span>
+          </div>
+          <div class="history-list">
+            ${alerts.length ? alerts.map((item) => `
+              <article class="history-item detail-history-item">
+                <div class="history-item-top">
+                  <div class="history-title-block">
+                    <span class="history-title">${escapeHtml(item.serviceName)}</span>
+                    <span class="history-subtitle">${escapeHtml(formatDateTime(item.sentAt))}</span>
+                  </div>
+                  <span class="badge muted">${escapeHtml(formatAlertType(item.alertType))}</span>
+                </div>
+                ${renderAlertMessage(item.message)}
+              </article>
+            `).join("") : renderEmptyHistory("No alerts for this service yet.", "Successful alert deliveries will appear here.")}
+          </div>
+        </section>
+      </div>
+    </article>
+  `;
 }
 
 function renderHistory(history) {
@@ -444,8 +557,22 @@ async function loadDashboard() {
   ]);
 
   renderSummary(summary);
-  renderServices(overview);
   renderHistory(history);
+
+  if (!overview.length) {
+    selectedServiceId = null;
+    renderServices(overview);
+    serviceDetailPanel.innerHTML = renderEmptyHistory(
+      "No monitored services registered yet.",
+      "Add a service to inspect focused history and status."
+    );
+  } else {
+    const hasSelected = overview.some((item) => item.id === selectedServiceId);
+    selectedServiceId = hasSelected ? selectedServiceId : overview[0].id;
+    renderServices(overview);
+    await loadServiceDetail(selectedServiceId);
+  }
+
   lastRefreshText.textContent = new Intl.DateTimeFormat(undefined, {
     year: "numeric",
     month: "short",
@@ -454,6 +581,11 @@ async function loadDashboard() {
     minute: "2-digit",
     second: "2-digit"
   }).format(new Date());
+}
+
+async function loadServiceDetail(serviceId) {
+  const detail = await fetchJson(`/api/monitored-services/${serviceId}/detail?limit=4`);
+  renderServiceDetail(detail);
 }
 
 async function submitForm(event) {
@@ -491,6 +623,19 @@ async function submitForm(event) {
 async function handleTableAction(event) {
   const button = event.target.closest("button[data-action]");
   if (!button) {
+    const card = event.target.closest("[data-service-id]");
+    if (!card) {
+      return;
+    }
+
+    const serviceId = Number(card.dataset.serviceId);
+    if (!serviceId || selectedServiceId === serviceId) {
+      return;
+    }
+
+    selectedServiceId = serviceId;
+    renderServices(serviceRows);
+    await loadServiceDetail(serviceId);
     return;
   }
 
@@ -514,6 +659,9 @@ async function handleTableAction(event) {
       await fetchJson(`/api/monitored-services/${row.id}`, { method: "DELETE" });
       setFormMessage("Monitored service deleted.", "success");
       resetForm();
+      if (selectedServiceId === row.id) {
+        selectedServiceId = null;
+      }
       await loadDashboard();
     } catch (error) {
       setFormMessage(error.message, "error");
@@ -561,6 +709,7 @@ form.addEventListener("submit", submitForm);
 resetButton.addEventListener("click", resetForm);
 refreshButton.addEventListener("click", loadDashboard);
 servicesList.addEventListener("click", handleTableAction);
+serviceDetailPanel.addEventListener("click", handleHistoryAction);
 incidentHistoryList.addEventListener("click", handleHistoryAction);
 alertHistoryList.addEventListener("click", handleHistoryAction);
 
