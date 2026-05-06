@@ -222,7 +222,7 @@ function renderAlertHistory(items) {
       <div class="history-meta-lines">
         <span>Sent ${escapeHtml(formatDateTime(item.sentAt))}</span>
       </div>
-      ${renderHistoryCopy(item.message)}
+      ${renderAlertMessage(item.message)}
     </article>
   `).join("")}
     ${renderHistoryListToggle(items.length, historyState.alertsExpanded, "alerts")}
@@ -258,6 +258,91 @@ function renderHistoryCopy(value) {
       </button>
     </div>
   `;
+}
+
+function renderAlertMessage(value) {
+  if (!value) {
+    return "";
+  }
+
+  const parsed = parseAlertMessage(value);
+  const metricEntries = [
+    ["Health", parsed.healthStatus],
+    ["Run", parsed.runStatus],
+    ["Last run", parsed.lastRunDate],
+    ["Checked", parsed.checkedAt ? formatDateTime(parsed.checkedAt) : ""]
+  ].filter(([, fieldValue]) => fieldValue && fieldValue !== "null");
+
+  return `
+    <div class="alert-copy-block">
+      <p class="alert-lede">${escapeHtml(parsed.summary)}</p>
+      ${metricEntries.length ? `
+        <div class="alert-metric-grid">
+          ${metricEntries.map(([label, fieldValue]) => `
+            <div class="alert-metric-card">
+              <span class="metric-label">${escapeHtml(label)}</span>
+              <span class="alert-metric-value">${escapeHtml(fieldValue)}</span>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+      ${parsed.error && parsed.error !== "null" ? `
+        <div class="alert-error-box">
+          <span class="metric-label">Error</span>
+          <p class="history-copy">${escapeHtml(parsed.error)}</p>
+        </div>
+      ` : ""}
+      ${renderRawAlertMessage(value)}
+    </div>
+  `;
+}
+
+function renderRawAlertMessage(value) {
+  const message = String(value).trim();
+  const escaped = escapeHtml(message);
+
+  return `
+    <div class="history-copy-block raw-alert-block" data-copy-state="collapsed">
+      <button class="history-toggle-button raw-alert-toggle" type="button" data-action="toggle-history-copy">
+        View raw message
+      </button>
+      <pre class="history-copy history-copy-clamped raw-alert-copy">${escaped}</pre>
+    </div>
+  `;
+}
+
+function parseAlertMessage(value) {
+  const lines = String(value)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const summary = lines[0]
+    ?.replace(/^:[^:]+:\s*/, "")
+    ?.replace(/\s+/g, " ")
+    ?.trim() || "Alert event";
+
+  const fields = {};
+
+  for (const line of lines.slice(1)) {
+    const match = line.match(/^-\s*([^:]+):\s*(.*)$/);
+    if (!match) {
+      continue;
+    }
+
+    const key = match[1].trim();
+    const normalizedKey = key.charAt(0).toLowerCase() + key.slice(1);
+    fields[normalizedKey] = match[2].trim();
+  }
+
+  return {
+    summary,
+    healthStatus: fields.healthStatus || "",
+    runStatus: fields.runStatus || "",
+    lastRunDate: fields.lastRunDate || "",
+    checkedAt: fields.checkedAt || "",
+    error: fields.error || ""
+  };
 }
 
 function renderHistoryListToggle(totalCount, expanded, section) {
@@ -465,7 +550,11 @@ function handleHistoryAction(event) {
 
   copyBlock.dataset.copyState = expanded ? "collapsed" : "expanded";
   copy.classList.toggle("history-copy-clamped", expanded);
-  button.textContent = expanded ? "Show full message" : "Collapse";
+  if (button.classList.contains("raw-alert-toggle")) {
+    button.textContent = expanded ? "View raw message" : "Hide raw message";
+  } else {
+    button.textContent = expanded ? "Show full message" : "Collapse";
+  }
 }
 
 form.addEventListener("submit", submitForm);
