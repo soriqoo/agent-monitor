@@ -306,7 +306,7 @@ function renderRawAlertMessage(value) {
       <button class="history-toggle-button raw-alert-toggle" type="button" data-action="toggle-history-copy">
         View raw message
       </button>
-      <pre class="history-copy history-copy-clamped raw-alert-copy">${escaped}</pre>
+      <pre class="history-copy raw-alert-copy">${escaped}</pre>
     </div>
   `;
 }
@@ -549,10 +549,10 @@ function handleHistoryAction(event) {
   const expanded = copyBlock.dataset.copyState === "expanded";
 
   copyBlock.dataset.copyState = expanded ? "collapsed" : "expanded";
-  copy.classList.toggle("history-copy-clamped", expanded);
   if (button.classList.contains("raw-alert-toggle")) {
     button.textContent = expanded ? "View raw message" : "Hide raw message";
   } else {
+    copy.classList.toggle("history-copy-clamped", expanded);
     button.textContent = expanded ? "Show full message" : "Collapse";
   }
 }
