@@ -706,6 +706,14 @@ h1 {
   gap: 8px;
 }
 
+.raw-alert-block[data-copy-state="collapsed"] .raw-alert-copy {
+  display: none;
+}
+
+.raw-alert-block[data-copy-state="expanded"] .raw-alert-copy {
+  display: block;
+}
+
 .raw-alert-copy {
   margin: 0;
   padding: 10px 12px;
@@ -717,10 +725,6 @@ h1 {
   font-size: 0.76rem;
   line-height: 1.4;
   white-space: pre-wrap;
-}
-
-.raw-alert-copy.history-copy-clamped {
-  -webkit-line-clamp: 3;
 }
 
 .history-panel .panel-header {
