@@ -137,6 +137,7 @@ h1 {
   grid-template-areas:
     "summary summary"
     "services form"
+    "detail detail"
     "history history";
   gap: 24px;
 }
@@ -144,6 +145,7 @@ h1 {
 .summary-panel,
 .services-panel,
 .form-panel,
+.detail-panel,
 .history-panel {
   min-width: 0;
 }
@@ -158,6 +160,10 @@ h1 {
 
 .form-panel {
   grid-area: form;
+}
+
+.detail-panel {
+  grid-area: detail;
 }
 
 .history-panel {
@@ -370,6 +376,11 @@ h1 {
   border: 1px solid rgba(26, 39, 54, 0.1);
 }
 
+.service-card.is-selected {
+  border-color: rgba(201, 92, 47, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(201, 92, 47, 0.12);
+}
+
 .service-card-top {
   display: flex;
   justify-content: space-between;
@@ -518,6 +529,74 @@ h1 {
   background: var(--panel-strong);
   border: 1px dashed rgba(26, 39, 54, 0.16);
   color: var(--ink-2);
+}
+
+.detail-panel-header {
+  align-items: center;
+}
+
+.detail-panel-hint {
+  color: var(--ink-3);
+  font-size: 0.88rem;
+}
+
+.service-detail-panel {
+  min-width: 0;
+}
+
+.detail-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.detail-summary-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--panel-strong);
+  border: 1px solid rgba(26, 39, 54, 0.1);
+}
+
+.detail-summary-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.detail-title-block {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.detail-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 0.8fr));
+  gap: 12px;
+}
+
+.detail-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.detail-history-column {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.detail-history-item {
+  gap: 10px;
 }
 
 .history-empty-state {
@@ -750,11 +829,12 @@ h1 {
     grid-template-columns: 1fr;
   }
 
-  .dashboard-grid {
+    .dashboard-grid {
     grid-template-areas:
       "summary"
       "services"
       "form"
+      "detail"
       "history";
   }
 
@@ -779,7 +859,10 @@ h1 {
   }
 
   .service-status-strip,
-  .service-details-grid {
+  .service-details-grid,
+  .detail-metric-strip,
+  .detail-summary-grid,
+  .detail-history-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -823,8 +906,15 @@ h1 {
   }
 
   .service-status-strip,
-  .service-details-grid {
+  .service-details-grid,
+  .detail-metric-strip,
+  .detail-summary-grid,
+  .detail-history-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-summary-top {
+    flex-direction: column;
   }
 
   .summary-cards {

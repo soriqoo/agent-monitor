@@ -96,6 +96,22 @@
         <div id="formMessage" class="message" aria-live="polite"></div>
       </section>
 
+      <section class="panel detail-panel">
+        <div class="panel-header detail-panel-header">
+          <div>
+            <h2>Service Detail</h2>
+            <p>Inspect the selected service without leaving the monitoring console.</p>
+          </div>
+          <span class="detail-panel-hint">Select a service card to refresh this panel.</span>
+        </div>
+        <div id="serviceDetailPanel" class="service-detail-panel">
+          <article class="empty-state">
+            <strong>No service selected yet.</strong>
+            <span>Choose a monitored service to view focused incident and alert history.</span>
+          </article>
+        </div>
+      </section>
+
       <section class="panel history-panel">
         <div class="panel-header">
           <h2>Recent Activity</h2>

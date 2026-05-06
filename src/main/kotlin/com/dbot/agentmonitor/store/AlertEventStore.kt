@@ -50,4 +50,29 @@ class AlertEventStore(
             limit
         )
     }
+
+    fun findRecentForService(serviceName: String, environment: String, limit: Int): List<RecentAlertEvent> {
+        return jdbcTemplate.query(
+            """
+            SELECT id, service_name, environment, alert_type, message, sent_at
+            FROM alert_event
+            WHERE service_name = ? AND environment = ?
+            ORDER BY sent_at DESC, id DESC
+            LIMIT ?
+            """.trimIndent(),
+            { rs, _ ->
+                RecentAlertEvent(
+                    id = rs.getLong("id"),
+                    serviceName = rs.getString("service_name"),
+                    environment = rs.getString("environment"),
+                    alertType = rs.getString("alert_type"),
+                    message = rs.getString("message"),
+                    sentAt = rs.getObject("sent_at", OffsetDateTime::class.java)
+                )
+            },
+            serviceName,
+            environment,
+            limit
+        )
+    }
 }

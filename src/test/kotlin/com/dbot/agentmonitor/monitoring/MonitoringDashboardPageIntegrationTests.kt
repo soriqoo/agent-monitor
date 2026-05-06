@@ -34,6 +34,9 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("Recent Incidents")) {
                     "Dashboard page should contain the recent incidents heading."
                 }
+                require(body.contains("Service Detail")) {
+                    "Dashboard page should contain the service detail panel."
+                }
             }
     }
 }
