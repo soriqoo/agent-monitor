@@ -1,6 +1,8 @@
 package com.dbot.agentmonitor.store
 
+import com.dbot.agentmonitor.domain.RecentServiceCheck
 import com.dbot.agentmonitor.domain.ServicePollResult
+import java.time.OffsetDateTime
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
@@ -48,6 +50,36 @@ class ServiceStatusStore(
                     healthStatus = rs.getString("health_status"),
                     runStatus = rs.getString("run_status"),
                     error = rs.getString("error")
+                )
+            },
+            serviceName,
+            environment,
+            limit
+        )
+    }
+
+    fun findRecentCheckSnapshots(serviceName: String, environment: String, limit: Int): List<RecentServiceCheck> {
+        return jdbcTemplate.query(
+            """
+            SELECT health_status,
+                   run_status,
+                   last_run_date,
+                   response_time_ms,
+                   error,
+                   checked_at
+            FROM service_check_history
+            WHERE service_name = ? AND environment = ?
+            ORDER BY checked_at DESC, id DESC
+            LIMIT ?
+            """.trimIndent(),
+            { rs, _ ->
+                RecentServiceCheck(
+                    healthStatus = rs.getString("health_status"),
+                    runStatus = rs.getString("run_status"),
+                    lastRunDate = rs.getString("last_run_date"),
+                    responseTimeMs = rs.getObject("response_time_ms", java.lang.Long::class.java)?.toLong(),
+                    error = rs.getString("error"),
+                    checkedAt = rs.getObject("checked_at", OffsetDateTime::class.java)
                 )
             },
             serviceName,

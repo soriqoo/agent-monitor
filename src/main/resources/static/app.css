@@ -579,13 +579,13 @@ h1 {
 
 .detail-summary-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 0.8fr));
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 0.78fr));
   gap: 12px;
 }
 
 .detail-history-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -597,6 +597,12 @@ h1 {
 
 .detail-history-item {
   gap: 10px;
+}
+
+.detail-check-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .history-empty-state {
@@ -862,7 +868,8 @@ h1 {
   .service-details-grid,
   .detail-metric-strip,
   .detail-summary-grid,
-  .detail-history-grid {
+  .detail-history-grid,
+  .detail-check-metrics {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -909,7 +916,8 @@ h1 {
   .service-details-grid,
   .detail-metric-strip,
   .detail-summary-grid,
-  .detail-history-grid {
+  .detail-history-grid,
+  .detail-check-metrics {
     grid-template-columns: 1fr;
   }
 

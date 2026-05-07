@@ -78,6 +78,30 @@ class MonitoredServiceDetailIntegrationTests {
 
         jdbcTemplate.update(
             """
+            INSERT INTO service_check_history(
+                service_name,
+                environment,
+                health_status,
+                run_status,
+                last_run_date,
+                response_time_ms,
+                error,
+                checked_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            "dmib",
+            "prod",
+            "UP",
+            "SENT",
+            "2026-05-06",
+            182L,
+            null,
+            OffsetDateTime.parse("2026-05-06T08:05:00+09:00")
+        )
+
+        jdbcTemplate.update(
+            """
             INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
             VALUES (?, ?, 'RESOLVED', ?, ?, ?)
             """.trimIndent(),
@@ -128,6 +152,9 @@ class MonitoredServiceDetailIntegrationTests {
             .expectBody()
             .jsonPath("$.service.serviceName").isEqualTo("dmib")
             .jsonPath("$.service.runStatus").isEqualTo("SENT")
+            .jsonPath("$.checks.length()").isEqualTo(1)
+            .jsonPath("$.checks[0].healthStatus").isEqualTo("UP")
+            .jsonPath("$.checks[0].responseTimeMs").isEqualTo(182)
             .jsonPath("$.incidents.length()").isEqualTo(1)
             .jsonPath("$.incidents[0].serviceName").isEqualTo("dmib")
             .jsonPath("$.alerts.length()").isEqualTo(1)
