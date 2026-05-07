@@ -89,6 +89,7 @@ Usage:
 Commands:
   help        Show this help message
   sync        Fetch origin, switch to main, and reset to origin/main
+  version     Show local HEAD, tracked origin/main, and divergence
   deploy      Rebuild and recreate the docker compose stack
   ps          Show compose service status
   logs        Show recent agent-monitor logs
@@ -108,14 +109,72 @@ Path resolution:
 EOF
 }
 
+print_repo_commit_line() {
+  local label="$1"
+  local ref="$2"
+
+  if ! git rev-parse --verify "$ref" >/dev/null 2>&1; then
+    printf "%-14s %s\n" "$label" "(missing)"
+    return
+  fi
+
+  local sha
+  local subject
+  sha="$(git rev-parse --short "$ref")"
+  subject="$(git log -1 --pretty=%s "$ref")"
+
+  printf "%-14s %s %s\n" "$label" "$sha" "$subject"
+}
+
+print_repo_version_report() {
+  local ahead="?"
+  local behind="?"
+  local worktree_state="clean"
+
+  if git rev-parse --verify origin/main >/dev/null 2>&1; then
+    local counts
+    counts="$(git rev-list --left-right --count HEAD...origin/main)"
+    read -r ahead behind <<<"$counts"
+  fi
+
+  if [[ -n "$(git status --short)" ]]; then
+    worktree_state="dirty"
+  fi
+
+  print_repo_commit_line "Local HEAD" "HEAD"
+  print_repo_commit_line "Remote main" "origin/main"
+  printf "%-14s ahead=%s behind=%s\n" "Divergence" "$ahead" "$behind"
+  printf "%-14s %s\n" "Worktree" "$worktree_state"
+}
+
 run_sync() {
   require_repo_dir
   (
     cd "$REPO_DIR"
+    local before_sha
+    local after_sha
+    before_sha="$(git rev-parse --short HEAD)"
     git fetch origin --prune
     git switch main
     git reset --hard origin/main
-    git log --oneline -5
+    after_sha="$(git rev-parse --short HEAD)"
+    print_repo_version_report
+    echo
+    if [[ "$before_sha" != "$after_sha" ]]; then
+      echo "Repository updated from $before_sha to $after_sha."
+      echo "Run ./agent-monitor.sh deploy to apply the new version."
+    else
+      echo "Repository already matched origin/main."
+      echo "Deploy is only needed if the running stack has not been refreshed yet."
+    fi
+  )
+}
+
+run_version() {
+  require_repo_dir
+  (
+    cd "$REPO_DIR"
+    print_repo_version_report
   )
 }
 
@@ -163,6 +222,9 @@ main() {
       ;;
     sync)
       run_sync
+      ;;
+    version)
+      run_version
       ;;
     deploy)
       run_deploy
