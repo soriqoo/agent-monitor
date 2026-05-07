@@ -6,6 +6,7 @@ import com.dbot.agentmonitor.domain.MonitoredServiceOverview
 import com.dbot.agentmonitor.store.AlertEventStore
 import com.dbot.agentmonitor.store.IncidentStore
 import com.dbot.agentmonitor.store.MonitoredServiceStore
+import com.dbot.agentmonitor.store.ServiceStatusStore
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -30,7 +31,8 @@ import org.springframework.web.server.ResponseStatusException
 class MonitoredServiceController(
     private val monitoredServiceStore: MonitoredServiceStore,
     private val incidentStore: IncidentStore,
-    private val alertEventStore: AlertEventStore
+    private val alertEventStore: AlertEventStore,
+    private val serviceStatusStore: ServiceStatusStore
 ) {
     @GetMapping
     fun list(): List<MonitoredService> {
@@ -56,6 +58,7 @@ class MonitoredServiceController(
 
         return MonitoredServiceDetailSnapshot(
             service = service,
+            checks = serviceStatusStore.findRecentCheckSnapshots(service.serviceName, service.environment, boundedLimit),
             incidents = incidentStore.findRecentForService(service.serviceName, service.environment, boundedLimit),
             alerts = alertEventStore.findRecentForService(service.serviceName, service.environment, boundedLimit)
         )

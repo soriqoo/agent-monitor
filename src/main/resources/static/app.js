@@ -161,6 +161,7 @@ function renderServices(rows) {
 
 function renderServiceDetail(detail) {
   const service = detail.service;
+  const checks = detail.checks || [];
   const incidents = detail.incidents || [];
   const alerts = detail.alerts || [];
 
@@ -203,6 +204,10 @@ function renderServiceDetail(detail) {
             <span class="service-url">${escapeHtml(service.baseUrl)}</span>
           </div>
           <div class="detail-block">
+            <span class="metric-label">Recent checks</span>
+            <span class="metric-value">${checks.length}</span>
+          </div>
+          <div class="detail-block">
             <span class="metric-label">Recent incidents</span>
             <span class="metric-value">${incidents.length}</span>
           </div>
@@ -221,6 +226,42 @@ function renderServiceDetail(detail) {
       </div>
 
       <div class="detail-history-grid">
+        <section class="detail-history-column">
+          <div class="history-column-header">
+            <h3>Recent Checks</h3>
+            <span>${checks.length ? `Latest ${checks.length} checks` : "No recent checks"}</span>
+          </div>
+          <div class="history-list">
+            ${checks.length ? checks.map((item) => `
+              <article class="history-item detail-history-item">
+                <div class="history-item-top">
+                  <div class="history-title-block">
+                    <span class="history-title">${escapeHtml(formatTimestamp(item.checkedAt))}</span>
+                    <span class="history-subtitle">${escapeHtml(item.responseTimeMs != null ? `${item.responseTimeMs} ms` : "Response time unavailable")}</span>
+                  </div>
+                  <span class="badge ${badgeClass(item.healthStatus)}">${escapeHtml(item.healthStatus)}</span>
+                </div>
+                <div class="detail-check-metrics">
+                  <div class="alert-metric-card">
+                    <span class="metric-label">Run</span>
+                    <span class="alert-metric-value">${escapeHtml(item.runStatus || "N/A")}</span>
+                  </div>
+                  <div class="alert-metric-card">
+                    <span class="metric-label">Last run</span>
+                    <span class="alert-metric-value">${escapeHtml(item.lastRunDate || "-")}</span>
+                  </div>
+                </div>
+                ${item.error ? `
+                  <div class="alert-error-box">
+                    <span class="metric-label">Error</span>
+                    <p class="history-copy">${escapeHtml(item.error)}</p>
+                  </div>
+                ` : ""}
+              </article>
+            `).join("") : renderEmptyHistory("No checks for this service yet.", "The latest polling results will appear here.")}
+          </div>
+        </section>
+
         <section class="detail-history-column">
           <div class="history-column-header">
             <h3>Service Incidents</h3>

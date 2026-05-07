@@ -50,6 +50,15 @@ data class RecentAlertEvent(
     val sentAt: OffsetDateTime
 )
 
+data class RecentServiceCheck(
+    val healthStatus: String,
+    val runStatus: String?,
+    val lastRunDate: String?,
+    val responseTimeMs: Long?,
+    val error: String?,
+    val checkedAt: OffsetDateTime
+)
+
 data class MonitoringHistorySnapshot(
     val incidents: List<RecentIncident>,
     val alerts: List<RecentAlertEvent>
@@ -57,6 +66,7 @@ data class MonitoringHistorySnapshot(
 
 data class MonitoredServiceDetailSnapshot(
     val service: MonitoredServiceOverview,
+    val checks: List<RecentServiceCheck>,
     val incidents: List<RecentIncident>,
     val alerts: List<RecentAlertEvent>
 )
