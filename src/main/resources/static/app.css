@@ -546,14 +546,14 @@ h1 {
 
 .detail-shell {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .detail-summary-card {
   display: grid;
-  gap: 14px;
-  padding: 18px;
-  border-radius: 22px;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
   background: var(--panel-strong);
   border: 1px solid rgba(26, 39, 54, 0.1);
 }
@@ -567,47 +567,106 @@ h1 {
 
 .detail-title-block {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .detail-metric-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .detail-summary-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 0.78fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 0.74fr));
+  gap: 10px;
 }
 
 .detail-history-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.92fr) minmax(0, 1.18fr);
+  gap: 14px;
+  align-items: start;
 }
 
 .detail-history-column {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
 .detail-history-item {
-  gap: 10px;
+  gap: 8px;
+  padding: 12px;
 }
 
 .detail-check-metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .history-empty-state {
-  min-height: 132px;
+  min-height: 108px;
   align-content: center;
+}
+
+.service-detail-panel .panel-header {
+  align-items: end;
+}
+
+.service-detail-panel .panel-header p {
+  max-width: 34ch;
+}
+
+.service-detail-panel .panel-aside {
+  max-width: 280px;
+}
+
+.detail-summary-card .status-group,
+.detail-summary-card .detail-block,
+.detail-summary-card .service-error-box {
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 16px;
+}
+
+.detail-history-column .history-column-header h3 {
+  font-size: 0.98rem;
+}
+
+.detail-history-column .history-column-header span {
+  font-size: 0.78rem;
+}
+
+.detail-history-column .history-title {
+  font-size: 0.92rem;
+}
+
+.detail-history-column .history-subtitle,
+.detail-history-column .history-meta-lines span {
+  font-size: 0.78rem;
+}
+
+.detail-history-column .badge {
+  min-width: auto;
+}
+
+.detail-history-column .alert-lede {
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.detail-history-column .alert-metric-card,
+.detail-history-column .alert-error-box {
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.detail-history-column .alert-metric-value {
+  font-size: 0.84rem;
 }
 
 .services-panel .panel-header p {
