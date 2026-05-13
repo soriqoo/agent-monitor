@@ -2,9 +2,9 @@
   --font-display: Georgia, "Times New Roman", serif;
   --font-ui: "Pretendard Variable", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
   --ink-1: #1c2430;
-  --ink-2: #5c6775;
-  --ink-3: #7d8691;
-  --line: rgba(26, 39, 54, 0.12);
+  --ink-2: #4c5868;
+  --ink-3: #6f7884;
+  --line: rgba(26, 39, 54, 0.16);
   --panel: rgba(255, 248, 240, 0.84);
   --panel-strong: rgba(255, 252, 247, 0.96);
   --accent: #c95c2f;
@@ -217,8 +217,8 @@ h1 {
   max-width: 22ch;
   padding: 12px 14px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(26, 39, 54, 0.08);
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(26, 39, 54, 0.12);
   color: var(--ink-2);
   font-size: 0.88rem;
   line-height: 1.55;
@@ -467,8 +467,8 @@ h1 {
   align-items: center;
   padding: 4px 9px;
   border-radius: 999px;
-  background: rgba(28, 36, 48, 0.08);
-  color: var(--ink-2);
+  background: rgba(28, 36, 48, 0.1);
+  color: #445061;
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -622,6 +622,11 @@ h1 {
   min-width: 0;
 }
 
+.detail-history-column:not(:first-child) {
+  padding-left: 14px;
+  border-left: 1px solid rgba(26, 39, 54, 0.1);
+}
+
 .detail-history-item {
   gap: 8px;
   padding: 12px;
@@ -663,6 +668,7 @@ h1 {
 }
 
 .detail-history-column .history-column-header span {
+  color: var(--ink-2);
   font-size: 0.78rem;
 }
 
@@ -712,6 +718,11 @@ h1 {
   min-width: 0;
 }
 
+.history-column:not(:first-child) {
+  padding-left: 14px;
+  border-left: 1px solid rgba(26, 39, 54, 0.1);
+}
+
 .history-column-header {
   display: flex;
   justify-content: space-between;
@@ -756,7 +767,8 @@ h1 {
   padding: 14px;
   border-radius: 18px;
   background: var(--panel-strong);
-  border: 1px solid rgba(26, 39, 54, 0.1);
+  border: 1px solid rgba(26, 39, 54, 0.14);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
 }
 
 .history-item-top {
@@ -818,8 +830,8 @@ h1 {
   gap: 6px;
   padding: 9px 11px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(26, 39, 54, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(26, 39, 54, 0.15);
 }
 
 .alert-metric-value {
@@ -912,6 +924,12 @@ h1 {
   font-size: 0.9rem;
 }
 
+#serviceDetailPanel .history-item + .history-item,
+#incidentHistoryList .history-item + .history-item,
+#alertHistoryList .history-item + .history-item {
+  margin-top: 2px;
+}
+
 #incidentHistoryList .history-item {
   min-height: 0;
 }
@@ -966,6 +984,12 @@ h1 {
 
   .history-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-history-column:not(:first-child),
+  .history-column:not(:first-child) {
+    padding-left: 0;
+    border-left: none;
   }
 
   .history-column-header,
