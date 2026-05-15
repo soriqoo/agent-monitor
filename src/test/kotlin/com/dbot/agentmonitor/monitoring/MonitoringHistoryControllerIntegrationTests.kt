@@ -96,4 +96,86 @@ class MonitoringHistoryControllerIntegrationTests {
             .jsonPath("$.alerts[0].serviceName").isEqualTo("daily-english-bot")
             .jsonPath("$.alerts[1].alertType").isEqualTo("INCIDENT_RESOLVED")
     }
+
+    @Test
+    fun historyAppliesLimitPerCollectionAndReturnsNewestItemsFirst() {
+        jdbcTemplate.update(
+            """
+            INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
+            VALUES (?, ?, 'RESOLVED', ?, ?, ?)
+            """.trimIndent(),
+            "old-bot",
+            "prod",
+            OffsetDateTime.parse("2026-04-27T13:00:00+09:00"),
+            OffsetDateTime.parse("2026-04-27T13:05:00+09:00"),
+            "Oldest incident"
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
+            VALUES (?, ?, 'RESOLVED', ?, ?, ?)
+            """.trimIndent(),
+            "middle-bot",
+            "prod",
+            OffsetDateTime.parse("2026-04-27T14:00:00+09:00"),
+            OffsetDateTime.parse("2026-04-27T14:10:00+09:00"),
+            "Middle incident"
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
+            VALUES (?, ?, 'OPEN', ?, NULL, ?)
+            """.trimIndent(),
+            "latest-bot",
+            "prod",
+            OffsetDateTime.parse("2026-04-27T15:00:00+09:00"),
+            "Latest incident"
+        )
+
+        jdbcTemplate.update(
+            """
+            INSERT INTO alert_event(service_name, environment, alert_type, message, sent_at)
+            VALUES (?, ?, ?, ?, ?)
+            """.trimIndent(),
+            "old-bot",
+            "prod",
+            "INCIDENT_RESOLVED",
+            "Oldest alert",
+            OffsetDateTime.parse("2026-04-27T13:05:05+09:00")
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO alert_event(service_name, environment, alert_type, message, sent_at)
+            VALUES (?, ?, ?, ?, ?)
+            """.trimIndent(),
+            "middle-bot",
+            "prod",
+            "INCIDENT_RESOLVED",
+            "Middle alert",
+            OffsetDateTime.parse("2026-04-27T14:10:05+09:00")
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO alert_event(service_name, environment, alert_type, message, sent_at)
+            VALUES (?, ?, ?, ?, ?)
+            """.trimIndent(),
+            "latest-bot",
+            "prod",
+            "INCIDENT_OPENED",
+            "Latest alert",
+            OffsetDateTime.parse("2026-04-27T15:00:05+09:00")
+        )
+
+        webTestClient.get()
+            .uri("/api/monitoring/history?limit=2")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.incidents.length()").isEqualTo(2)
+            .jsonPath("$.incidents[0].serviceName").isEqualTo("latest-bot")
+            .jsonPath("$.incidents[1].serviceName").isEqualTo("middle-bot")
+            .jsonPath("$.alerts.length()").isEqualTo(2)
+            .jsonPath("$.alerts[0].serviceName").isEqualTo("latest-bot")
+            .jsonPath("$.alerts[1].serviceName").isEqualTo("middle-bot")
+    }
 }
