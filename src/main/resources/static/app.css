@@ -325,6 +325,7 @@ h1 {
 .ghost-button,
 .danger-button,
 .small-button,
+.check-button,
 .toggle-button {
   appearance: none;
   border: none;
@@ -340,6 +341,7 @@ h1 {
 .ghost-button:hover,
 .danger-button:hover,
 .small-button:hover,
+.check-button:hover,
 .toggle-button:hover {
   transform: translateY(-1px);
 }
@@ -353,6 +355,11 @@ h1 {
 .small-button {
   background: rgba(28, 36, 48, 0.08);
   color: var(--ink-1);
+}
+
+.check-button {
+  background: rgba(45, 91, 138, 0.12);
+  color: #24486d;
 }
 
 .danger-button {
@@ -370,6 +377,7 @@ h1 {
   color: var(--ok);
 }
 
+.check-button:disabled,
 .toggle-button:disabled {
   cursor: wait;
   opacity: 0.62;

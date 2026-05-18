@@ -7,6 +7,7 @@ import com.dbot.agentmonitor.store.AlertEventStore
 import com.dbot.agentmonitor.store.IncidentStore
 import com.dbot.agentmonitor.store.MonitoredServiceStore
 import com.dbot.agentmonitor.store.ServiceStatusStore
+import com.dbot.agentmonitor.polling.ServicePollingCommand
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
+import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 
 @RestController
 @Validated
@@ -32,7 +35,8 @@ class MonitoredServiceController(
     private val monitoredServiceStore: MonitoredServiceStore,
     private val incidentStore: IncidentStore,
     private val alertEventStore: AlertEventStore,
-    private val serviceStatusStore: ServiceStatusStore
+    private val serviceStatusStore: ServiceStatusStore,
+    private val servicePollingCommand: ServicePollingCommand
 ) {
     @GetMapping
     fun list(): List<MonitoredService> {
@@ -49,6 +53,26 @@ class MonitoredServiceController(
         @PathVariable id: Long,
         @RequestParam(defaultValue = "4") limit: Int
     ): MonitoredServiceDetailSnapshot {
+        return detailSnapshot(id, limit)
+    }
+
+    @PostMapping("/{id}/check")
+    fun checkNow(
+        @PathVariable id: Long,
+        @RequestParam(defaultValue = "4") limit: Int
+    ): Mono<MonitoredServiceDetailSnapshot> =
+        Mono.fromCallable {
+            val service = monitoredServiceStore.findById(id)
+                ?: throw ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Monitored service not found. id=$id"
+                )
+
+            servicePollingCommand.pollAndRecord(service)
+            detailSnapshot(id, limit)
+        }.subscribeOn(Schedulers.boundedElastic())
+
+    private fun detailSnapshot(id: Long, limit: Int): MonitoredServiceDetailSnapshot {
         val boundedLimit = limit.coerceIn(1, 10)
         val service = monitoredServiceStore.findOverviewById(id)
             ?: throw ResponseStatusException(
