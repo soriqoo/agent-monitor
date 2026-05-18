@@ -1,8 +1,6 @@
 package com.dbot.agentmonitor.polling
 
 import com.dbot.agentmonitor.store.MonitoredServiceStore
-import com.dbot.agentmonitor.store.ServiceStatusStore
-import com.dbot.agentmonitor.incident.IncidentService
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -10,9 +8,7 @@ import org.springframework.stereotype.Component
 @Component
 class ServicePollingScheduler(
     private val monitoredServiceStore: MonitoredServiceStore,
-    private val servicePollingService: ServicePollingService,
-    private val serviceStatusStore: ServiceStatusStore,
-    private val incidentService: IncidentService
+    private val servicePollingCommand: ServicePollingCommand
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -22,9 +18,7 @@ class ServicePollingScheduler(
         log.info("Polling tick. enabledServices={}", services.size)
 
         services.forEach { service ->
-            val result = servicePollingService.poll(service)
-            serviceStatusStore.recordPollResult(result)
-            incidentService.applyPollResult(result)
+            val result = servicePollingCommand.pollAndRecord(service)
             val logMessage =
                 "Polled service. serviceName={}, environment={}, healthStatus={}, runStatus={}, lastRunDate={}, responseTimeMs={}, error={}"
 

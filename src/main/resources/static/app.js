@@ -114,6 +114,9 @@ function renderServices(rows) {
           <span class="service-subline">${row.enabled ? "Enabled for polling" : "Disabled from polling"}</span>
         </div>
         <div class="row-actions">
+          <button class="check-button" type="button" data-action="check-now" data-id="${row.id}">
+            Check now
+          </button>
           <button class="toggle-button ${row.enabled ? "is-enabled" : "is-disabled"}" type="button" data-action="toggle-enabled" data-id="${row.id}">
             ${row.enabled ? "Disable" : "Enable"}
           </button>
@@ -692,6 +695,21 @@ async function toggleServiceEnabled(row, button) {
   }
 }
 
+async function checkServiceNow(row, button) {
+  button.disabled = true;
+
+  try {
+    await fetchJson(`/api/monitored-services/${row.id}/check`, { method: "POST" });
+    selectedServiceId = row.id;
+    setFormMessage(`${row.serviceName} checked now.`, "success");
+    await loadDashboard();
+  } catch (error) {
+    setFormMessage(error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function handleTableAction(event) {
   const button = event.target.closest("button[data-action]");
   if (!button) {
@@ -723,6 +741,11 @@ async function handleTableAction(event) {
 
   if (button.dataset.action === "toggle-enabled") {
     await toggleServiceEnabled(row, button);
+    return;
+  }
+
+  if (button.dataset.action === "check-now") {
+    await checkServiceNow(row, button);
     return;
   }
 
