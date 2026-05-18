@@ -93,4 +93,101 @@ class MonitoredServiceOverviewIntegrationTests {
             .jsonPath("$[0].lastRunDate").isEqualTo("2026-04-27")
             .jsonPath("$[0].openIncident").isEqualTo(true)
     }
+
+    @Test
+    fun overviewReturnsMultipleServicesWithIndependentStatusAndIncidentState() {
+        jdbcTemplate.update(
+            """
+            INSERT INTO monitored_service(service_name, base_url, environment, enabled)
+            VALUES (?, ?, ?, ?)
+            """.trimIndent(),
+            "dmib",
+            "http://dmib:8080",
+            "prod",
+            true
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO monitored_service(service_name, base_url, environment, enabled)
+            VALUES (?, ?, ?, ?)
+            """.trimIndent(),
+            "daily-english-bot",
+            "http://daily-english-bot:8080",
+            "prod",
+            false
+        )
+
+        jdbcTemplate.update(
+            """
+            INSERT INTO service_current_status(
+                service_name,
+                environment,
+                health_status,
+                run_status,
+                last_run_date,
+                last_success_at,
+                last_checked_at,
+                error
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            "dmib",
+            "prod",
+            "UP",
+            "SENT",
+            "2026-05-15",
+            OffsetDateTime.parse("2026-05-15T08:00:03+09:00"),
+            OffsetDateTime.parse("2026-05-15T08:05:00+09:00"),
+            null
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO service_current_status(
+                service_name,
+                environment,
+                health_status,
+                run_status,
+                last_run_date,
+                last_success_at,
+                last_checked_at,
+                error
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            "daily-english-bot",
+            "prod",
+            "DOWN",
+            null,
+            null,
+            null,
+            OffsetDateTime.parse("2026-05-15T08:10:00+09:00"),
+            "Health request failed"
+        )
+
+        jdbcTemplate.update(
+            """
+            INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
+            VALUES (?, ?, 'OPEN', ?, NULL, ?)
+            """.trimIndent(),
+            "daily-english-bot",
+            "prod",
+            OffsetDateTime.parse("2026-05-15T08:10:00+09:00"),
+            "Health request failed"
+        )
+
+        webTestClient.get()
+            .uri("/api/monitored-services/overview")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.length()").isEqualTo(2)
+            .jsonPath("$[0].serviceName").isEqualTo("dmib")
+            .jsonPath("$[0].enabled").isEqualTo(true)
+            .jsonPath("$[0].healthStatus").isEqualTo("UP")
+            .jsonPath("$[0].openIncident").isEqualTo(false)
+            .jsonPath("$[1].serviceName").isEqualTo("daily-english-bot")
+            .jsonPath("$[1].enabled").isEqualTo(false)
+            .jsonPath("$[1].healthStatus").isEqualTo("DOWN")
+            .jsonPath("$[1].openIncident").isEqualTo(true)
+    }
 }
