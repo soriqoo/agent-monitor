@@ -114,6 +114,9 @@ function renderServices(rows) {
           <span class="service-subline">${row.enabled ? "Enabled for polling" : "Disabled from polling"}</span>
         </div>
         <div class="row-actions">
+          <button class="toggle-button ${row.enabled ? "is-enabled" : "is-disabled"}" type="button" data-action="toggle-enabled" data-id="${row.id}">
+            ${row.enabled ? "Disable" : "Enable"}
+          </button>
           <button class="small-button" type="button" data-action="edit" data-id="${row.id}">Edit</button>
           <button class="danger-button" type="button" data-action="delete" data-id="${row.id}">Delete</button>
         </div>
@@ -661,6 +664,34 @@ async function submitForm(event) {
   }
 }
 
+async function toggleServiceEnabled(row, button) {
+  const nextEnabled = !row.enabled;
+  const payload = {
+    serviceName: row.serviceName,
+    baseUrl: row.baseUrl,
+    environment: row.environment,
+    enabled: nextEnabled
+  };
+
+  button.disabled = true;
+
+  try {
+    await fetchJson(`/api/monitored-services/${row.id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    setFormMessage(
+      `${row.serviceName} polling ${nextEnabled ? "enabled" : "disabled"}.`,
+      "success"
+    );
+    await loadDashboard();
+  } catch (error) {
+    setFormMessage(error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function handleTableAction(event) {
   const button = event.target.closest("button[data-action]");
   if (!button) {
@@ -687,6 +718,11 @@ async function handleTableAction(event) {
 
   if (button.dataset.action === "edit") {
     fillForm(row);
+    return;
+  }
+
+  if (button.dataset.action === "toggle-enabled") {
+    await toggleServiceEnabled(row, button);
     return;
   }
 
