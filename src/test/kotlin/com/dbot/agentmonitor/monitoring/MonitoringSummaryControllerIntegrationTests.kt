@@ -68,4 +68,63 @@ class MonitoringSummaryControllerIntegrationTests {
             .jsonPath("$.openIncidents").isEqualTo(1)
             .jsonPath("$.status").isEqualTo("BOOTSTRAPPED")
     }
+
+    @Test
+    fun summaryCountsMultipleRegisteredEnabledAndOpenIncidentServices() {
+        jdbcTemplate.update(
+            """
+            INSERT INTO monitored_service(service_name, base_url, environment, enabled)
+            VALUES (?, ?, ?, TRUE)
+            """.trimIndent(),
+            "dmib",
+            "http://dmib:8080",
+            "prod"
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO monitored_service(service_name, base_url, environment, enabled)
+            VALUES (?, ?, ?, FALSE)
+            """.trimIndent(),
+            "daily-english-bot",
+            "http://daily-english-bot:8080",
+            "prod"
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO monitored_service(service_name, base_url, environment, enabled)
+            VALUES (?, ?, ?, TRUE)
+            """.trimIndent(),
+            "dmib",
+            "http://dmib-dev:8080",
+            "dev"
+        )
+
+        jdbcTemplate.update(
+            """
+            INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
+            VALUES (?, ?, 'OPEN', CURRENT_TIMESTAMP, NULL, ?)
+            """.trimIndent(),
+            "dmib",
+            "prod",
+            "dmib prod is down"
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
+            VALUES (?, ?, 'RESOLVED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
+            """.trimIndent(),
+            "daily-english-bot",
+            "prod",
+            "resolved issue should not count"
+        )
+
+        webTestClient.get()
+            .uri("/internal/monitoring/summary")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.registeredServices").isEqualTo(3)
+            .jsonPath("$.enabledServices").isEqualTo(2)
+            .jsonPath("$.openIncidents").isEqualTo(1)
+    }
 }
