@@ -12,6 +12,7 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
+import java.time.OffsetDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -110,6 +111,78 @@ class MonitoredServiceManualCheckIntegrationTests {
             .expectStatus().isNotFound
     }
 
+    @Test
+    fun checkNowOpensIncidentWhenHealthFails() {
+        val serviceId = insertMonitoredService(enabled = true)
+        targetServer.enqueue(
+            MockResponse()
+                .setResponseCode(503)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"status":"DOWN"}""")
+        )
+
+        webTestClient.post()
+            .uri("/api/monitored-services/{id}/check", serviceId)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.service.healthStatus").isEqualTo("DOWN")
+            .jsonPath("$.service.openIncident").isEqualTo(true)
+            .jsonPath("$.checks.length()").isEqualTo(1)
+            .jsonPath("$.checks[0].healthStatus").isEqualTo("DOWN")
+            .jsonPath("$.incidents.length()").isEqualTo(1)
+            .jsonPath("$.incidents[0].status").isEqualTo("OPEN")
+
+        assertThat(openIncidentCount()).isEqualTo(1)
+        assertThat(targetServer.requestCount).isEqualTo(1)
+        assertThat(targetServer.takeRequest().path).isEqualTo("/actuator/health")
+    }
+
+    @Test
+    fun checkNowResolvesOpenIncidentWhenServiceRecovers() {
+        val serviceId = insertMonitoredService(enabled = true)
+        insertOpenIncident()
+        targetServer.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"status":"UP"}""")
+        )
+        targetServer.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """
+                    {
+                      "service": "dmib",
+                      "environment": "prod",
+                      "timezone": "Asia/Seoul",
+                      "lastRunDate": "2026-05-19",
+                      "status": "SENT",
+                      "sentAt": "2026-05-19T08:00:03+09:00",
+                      "error": null
+                    }
+                    """.trimIndent()
+                )
+        )
+
+        webTestClient.post()
+            .uri("/api/monitored-services/{id}/check", serviceId)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.service.healthStatus").isEqualTo("UP")
+            .jsonPath("$.service.runStatus").isEqualTo("SENT")
+            .jsonPath("$.service.openIncident").isEqualTo(false)
+            .jsonPath("$.incidents.length()").isEqualTo(1)
+            .jsonPath("$.incidents[0].status").isEqualTo("RESOLVED")
+            .jsonPath("$.incidents[0].lastError").doesNotExist()
+
+        assertThat(openIncidentCount()).isZero()
+        assertThat(resolvedIncidentCount()).isEqualTo(1)
+        assertThat(targetServer.takeRequest().path).isEqualTo("/actuator/health")
+        assertThat(targetServer.takeRequest().path).isEqualTo("/internal/monitoring/last-run")
+    }
+
     private fun insertMonitoredService(enabled: Boolean): Long {
         jdbcTemplate.update(
             """
@@ -132,5 +205,46 @@ class MonitoredServiceManualCheckIntegrationTests {
             "dmib",
             "prod"
         )!!
+    }
+
+    private fun insertOpenIncident() {
+        jdbcTemplate.update(
+            """
+            INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
+            VALUES (?, ?, 'OPEN', ?, NULL, ?)
+            """.trimIndent(),
+            "dmib",
+            "prod",
+            OffsetDateTime.parse("2026-05-19T07:55:00+09:00"),
+            "Health request failed: previous outage"
+        )
+    }
+
+    private fun openIncidentCount(): Long {
+        return jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(1)
+            FROM incident
+            WHERE service_name = 'dmib'
+              AND environment = 'prod'
+              AND status = 'OPEN'
+            """.trimIndent(),
+            Long::class.java
+        ) ?: 0L
+    }
+
+    private fun resolvedIncidentCount(): Long {
+        return jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(1)
+            FROM incident
+            WHERE service_name = 'dmib'
+              AND environment = 'prod'
+              AND status = 'RESOLVED'
+              AND resolved_at IS NOT NULL
+              AND last_error IS NULL
+            """.trimIndent(),
+            Long::class.java
+        ) ?: 0L
     }
 }
