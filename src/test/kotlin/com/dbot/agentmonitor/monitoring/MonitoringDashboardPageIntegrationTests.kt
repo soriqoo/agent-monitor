@@ -34,6 +34,9 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("Recent Incidents")) {
                     "Dashboard page should contain the recent incidents heading."
                 }
+                require(body.contains("Recent Checks")) {
+                    "Dashboard page should contain the recent service checks heading."
+                }
                 require(body.contains("Service Detail")) {
                     "Dashboard page should contain the service detail panel."
                 }
@@ -57,6 +60,12 @@ class MonitoringDashboardPageIntegrationTests {
                 }
                 require(body.contains("Check failed")) {
                     "Dashboard script should clearly label manual check failures."
+                }
+                require(body.contains("/api/monitoring/checks?limit=4")) {
+                    "Dashboard script should load recent service checks."
+                }
+                require(body.contains("renderCheckHistory")) {
+                    "Dashboard script should render recent service checks."
                 }
             }
     }
