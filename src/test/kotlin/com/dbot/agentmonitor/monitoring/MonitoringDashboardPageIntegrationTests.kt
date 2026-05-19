@@ -67,6 +67,9 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("renderCheckHistory")) {
                     "Dashboard script should render recent service checks."
                 }
+                require(body.contains("renderRetentionSummary")) {
+                    "Dashboard script should render retention cleanup visibility."
+                }
             }
     }
 }

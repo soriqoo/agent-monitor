@@ -226,7 +226,7 @@ h1 {
 
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
 }
 
@@ -259,6 +259,13 @@ h1 {
   font-size: 1rem;
 }
 
+.summary-card.retention-card .value {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -275,6 +282,29 @@ h1 {
   font-feature-settings: "tnum" 1;
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+.retention-card .status-pill {
+  min-height: 34px;
+  justify-self: start;
+  width: auto;
+  min-width: 112px;
+  font-size: 0.84rem;
+  color: var(--ok);
+  background: rgba(30, 138, 97, 0.14);
+}
+
+.retention-empty,
+.retention-meta,
+.retention-count {
+  display: block;
+  color: var(--ink-2);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.retention-count {
+  color: var(--ink-1);
 }
 
 .service-form {
