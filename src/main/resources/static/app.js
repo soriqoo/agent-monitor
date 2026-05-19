@@ -1,6 +1,7 @@
 const summaryCards = document.getElementById("summaryCards");
 const servicesList = document.getElementById("servicesList");
 const serviceDetailPanel = document.getElementById("serviceDetailPanel");
+const checkHistoryList = document.getElementById("checkHistoryList");
 const incidentHistoryList = document.getElementById("incidentHistoryList");
 const alertHistoryList = document.getElementById("alertHistoryList");
 const form = document.getElementById("serviceForm");
@@ -326,6 +327,44 @@ function renderHistory(history) {
   renderAlertHistory(latestHistory.alerts);
 }
 
+function renderCheckHistory(items) {
+  if (!items.length) {
+    checkHistoryList.innerHTML = renderEmptyHistory(
+      "No checks recorded yet.",
+      "Polling and manual check results will appear here."
+    );
+    return;
+  }
+
+  checkHistoryList.innerHTML = items.map((item) => `
+    <article class="history-item">
+      <div class="history-item-top">
+        <div class="history-title-block">
+          <span class="history-title">${escapeHtml(item.serviceName)}</span>
+          <span class="history-subtitle">${escapeHtml(item.environment)} / ${escapeHtml(formatTimestamp(item.checkedAt))}</span>
+        </div>
+        <span class="badge ${badgeClass(item.healthStatus)}">${escapeHtml(item.healthStatus)}</span>
+      </div>
+      <div class="detail-check-metrics">
+        <div class="alert-metric-card">
+          <span class="metric-label">Run</span>
+          <span class="alert-metric-value">${escapeHtml(item.runStatus || "N/A")}</span>
+        </div>
+        <div class="alert-metric-card">
+          <span class="metric-label">Latency</span>
+          <span class="alert-metric-value">${escapeHtml(item.responseTimeMs != null ? `${item.responseTimeMs} ms` : "-")}</span>
+        </div>
+      </div>
+      ${item.error ? `
+        <div class="alert-error-box">
+          <span class="metric-label">Error</span>
+          <p class="history-copy">${escapeHtml(item.error)}</p>
+        </div>
+      ` : ""}
+    </article>
+  `).join("");
+}
+
 function renderIncidentHistory(items) {
   if (!items.length) {
     incidentHistoryList.innerHTML = renderEmptyHistory(
@@ -597,13 +636,15 @@ function formatAlertType(value) {
 async function loadDashboard() {
   setFormMessage("");
 
-  const [summary, overview, history] = await Promise.all([
+  const [summary, overview, history, checks] = await Promise.all([
     fetchJson("/internal/monitoring/summary"),
     fetchJson("/api/monitored-services/overview"),
-    fetchJson("/api/monitoring/history?limit=6")
+    fetchJson("/api/monitoring/history?limit=6"),
+    fetchJson("/api/monitoring/checks?limit=4")
   ]);
 
   renderSummary(summary);
+  renderCheckHistory(checks);
   renderHistory(history);
 
   if (!overview.length) {
