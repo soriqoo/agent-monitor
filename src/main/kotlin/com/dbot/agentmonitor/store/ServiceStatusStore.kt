@@ -1,6 +1,7 @@
 package com.dbot.agentmonitor.store
 
 import com.dbot.agentmonitor.domain.RecentServiceCheck
+import com.dbot.agentmonitor.domain.RecentServiceCheckEvent
 import com.dbot.agentmonitor.domain.ServicePollResult
 import java.time.OffsetDateTime
 import org.springframework.jdbc.core.JdbcTemplate
@@ -84,6 +85,37 @@ class ServiceStatusStore(
             },
             serviceName,
             environment,
+            limit
+        )
+    }
+
+    fun findRecentCheckEvents(limit: Int): List<RecentServiceCheckEvent> {
+        return jdbcTemplate.query(
+            """
+            SELECT service_name,
+                   environment,
+                   health_status,
+                   run_status,
+                   last_run_date,
+                   response_time_ms,
+                   error,
+                   checked_at
+            FROM service_check_history
+            ORDER BY checked_at DESC, id DESC
+            LIMIT ?
+            """.trimIndent(),
+            { rs, _ ->
+                RecentServiceCheckEvent(
+                    serviceName = rs.getString("service_name"),
+                    environment = rs.getString("environment"),
+                    healthStatus = rs.getString("health_status"),
+                    runStatus = rs.getString("run_status"),
+                    lastRunDate = rs.getString("last_run_date"),
+                    responseTimeMs = rs.getObject("response_time_ms", java.lang.Long::class.java)?.toLong(),
+                    error = rs.getString("error"),
+                    checkedAt = rs.getObject("checked_at", OffsetDateTime::class.java)
+                )
+            },
             limit
         )
     }

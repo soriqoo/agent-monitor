@@ -178,4 +178,101 @@ class MonitoringHistoryControllerIntegrationTests {
             .jsonPath("$.alerts[0].serviceName").isEqualTo("latest-bot")
             .jsonPath("$.alerts[1].serviceName").isEqualTo("middle-bot")
     }
+
+    @Test
+    fun checksReturnsRecentServiceChecksAcrossServicesNewestFirst() {
+        insertServiceCheck(
+            serviceName = "old-bot",
+            environment = "prod",
+            healthStatus = "UP",
+            runStatus = "SENT",
+            lastRunDate = "2026-05-18",
+            responseTimeMs = 42L,
+            error = null,
+            checkedAt = OffsetDateTime.parse("2026-05-18T10:00:00+09:00")
+        )
+        insertServiceCheck(
+            serviceName = "latest-bot",
+            environment = "prod",
+            healthStatus = "DOWN",
+            runStatus = null,
+            lastRunDate = null,
+            responseTimeMs = 99L,
+            error = "Health request failed: timeout",
+            checkedAt = OffsetDateTime.parse("2026-05-18T10:05:00+09:00")
+        )
+
+        webTestClient.get()
+            .uri("/api/monitoring/checks?limit=5")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.length()").isEqualTo(2)
+            .jsonPath("$[0].serviceName").isEqualTo("latest-bot")
+            .jsonPath("$[0].environment").isEqualTo("prod")
+            .jsonPath("$[0].healthStatus").isEqualTo("DOWN")
+            .jsonPath("$[0].error").isEqualTo("Health request failed: timeout")
+            .jsonPath("$[1].serviceName").isEqualTo("old-bot")
+            .jsonPath("$[1].runStatus").isEqualTo("SENT")
+    }
+
+    @Test
+    fun checksCoercesLimitToSafeRange() {
+        repeat(12) { index ->
+            insertServiceCheck(
+                serviceName = "bot-$index",
+                environment = "prod",
+                healthStatus = "UP",
+                runStatus = "SENT",
+                lastRunDate = "2026-05-18",
+                responseTimeMs = index.toLong(),
+                error = null,
+                checkedAt = OffsetDateTime.parse("2026-05-18T10:${index.toString().padStart(2, '0')}:00+09:00")
+            )
+        }
+
+        webTestClient.get()
+            .uri("/api/monitoring/checks?limit=999")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.length()").isEqualTo(10)
+            .jsonPath("$[0].serviceName").isEqualTo("bot-11")
+            .jsonPath("$[9].serviceName").isEqualTo("bot-2")
+    }
+
+    private fun insertServiceCheck(
+        serviceName: String,
+        environment: String,
+        healthStatus: String,
+        runStatus: String?,
+        lastRunDate: String?,
+        responseTimeMs: Long,
+        error: String?,
+        checkedAt: OffsetDateTime
+    ) {
+        jdbcTemplate.update(
+            """
+            INSERT INTO service_check_history(
+                service_name,
+                environment,
+                health_status,
+                run_status,
+                last_run_date,
+                response_time_ms,
+                error,
+                checked_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            serviceName,
+            environment,
+            healthStatus,
+            runStatus,
+            lastRunDate,
+            responseTimeMs,
+            error,
+            checkedAt
+        )
+    }
 }
