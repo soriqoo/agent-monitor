@@ -11,6 +11,8 @@ data class AppProperties(
 ) {
     data class Monitoring(
         val pollCron: String = "0 */5 * * * *",
+        val retentionCron: String = "0 30 3 * * *",
+        val retentionDays: Long = 30,
         val timeoutMs: Long = 3000,
         val connectTimeoutMs: Int = 3000,
         val observationFailureOpenThreshold: Int = 3
