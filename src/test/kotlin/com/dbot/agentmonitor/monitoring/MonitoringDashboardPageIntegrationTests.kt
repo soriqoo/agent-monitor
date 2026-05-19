@@ -39,4 +39,25 @@ class MonitoringDashboardPageIntegrationTests {
                 }
             }
     }
+
+    @Test
+    fun dashboardScriptIncludesCheckNowFeedbackState() {
+        WebTestClient.bindToServer()
+            .baseUrl("http://localhost:$port")
+            .build()
+            .get()
+            .uri("/app.js")
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().contentTypeCompatibleWith("application/javascript")
+            .expectBody(String::class.java)
+            .value { body ->
+                require(body.contains("Checking...")) {
+                    "Dashboard script should show a visible in-progress state for manual checks."
+                }
+                require(body.contains("Check failed")) {
+                    "Dashboard script should clearly label manual check failures."
+                }
+            }
+    }
 }

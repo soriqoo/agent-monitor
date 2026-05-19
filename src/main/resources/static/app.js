@@ -696,7 +696,10 @@ async function toggleServiceEnabled(row, button) {
 }
 
 async function checkServiceNow(row, button) {
+  const originalText = button.textContent;
   button.disabled = true;
+  button.textContent = "Checking...";
+  setFormMessage(`Checking ${row.serviceName} now...`);
 
   try {
     await fetchJson(`/api/monitored-services/${row.id}/check`, { method: "POST" });
@@ -704,9 +707,10 @@ async function checkServiceNow(row, button) {
     setFormMessage(`${row.serviceName} checked now.`, "success");
     await loadDashboard();
   } catch (error) {
-    setFormMessage(error.message, "error");
+    setFormMessage(`Check failed for ${row.serviceName}: ${error.message}`, "error");
   } finally {
     button.disabled = false;
+    button.textContent = originalText;
   }
 }
 
