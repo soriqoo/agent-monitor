@@ -10,7 +10,7 @@ import java.time.ZoneId
 
 @Component
 class HistoryRetentionScheduler(
-    private val historyRetentionService: HistoryRetentionService,
+    private val historyRetentionPruner: HistoryRetentionPruner,
     private val retentionRunStore: RetentionRunStore,
     private val appProperties: AppProperties
 ) {
@@ -20,25 +20,41 @@ class HistoryRetentionScheduler(
     fun runRetention() {
         val zone = ZoneId.of(appProperties.timezone)
         val startedAt = OffsetDateTime.now(zone)
-        val result = historyRetentionService.prune(
-            now = startedAt,
-            retentionDays = appProperties.monitoring.retentionDays
-        )
-        val completedAt = OffsetDateTime.now(zone)
+        val retentionDays = appProperties.monitoring.retentionDays
 
-        retentionRunStore.recordSuccess(
-            retentionDays = appProperties.monitoring.retentionDays,
-            startedAt = startedAt,
-            completedAt = completedAt,
-            result = result
-        )
+        try {
+            val result = historyRetentionPruner.prune(
+                now = startedAt,
+                retentionDays = retentionDays
+            )
+            val completedAt = OffsetDateTime.now(zone)
 
-        log.info(
-            "Pruned monitoring history. retentionDays={}, deletedServiceChecks={}, deletedAlertEvents={}, deletedResolvedIncidents={}",
-            appProperties.monitoring.retentionDays,
-            result.deletedServiceChecks,
-            result.deletedAlertEvents,
-            result.deletedResolvedIncidents
-        )
+            retentionRunStore.recordSuccess(
+                retentionDays = retentionDays,
+                startedAt = startedAt,
+                completedAt = completedAt,
+                result = result
+            )
+
+            log.info(
+                "Pruned monitoring history. retentionDays={}, deletedServiceChecks={}, deletedAlertEvents={}, deletedResolvedIncidents={}",
+                retentionDays,
+                result.deletedServiceChecks,
+                result.deletedAlertEvents,
+                result.deletedResolvedIncidents
+            )
+        } catch (error: Exception) {
+            val completedAt = OffsetDateTime.now(zone)
+            val message = error.message ?: error.javaClass.simpleName
+
+            retentionRunStore.recordFailure(
+                retentionDays = retentionDays,
+                startedAt = startedAt,
+                completedAt = completedAt,
+                error = message
+            )
+
+            log.error("Failed to prune monitoring history. retentionDays={}", retentionDays, error)
+        }
     }
 }

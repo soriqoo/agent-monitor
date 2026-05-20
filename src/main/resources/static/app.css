@@ -294,6 +294,11 @@ h1 {
   background: rgba(30, 138, 97, 0.14);
 }
 
+.retention-card .status-pill.failed {
+  color: var(--down);
+  background: rgba(180, 61, 61, 0.12);
+}
+
 .retention-empty,
 .retention-meta,
 .retention-count {

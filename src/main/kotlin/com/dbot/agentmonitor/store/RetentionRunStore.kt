@@ -52,6 +52,33 @@ class RetentionRunStore(
         )
     }
 
+    fun recordFailure(
+        retentionDays: Long,
+        startedAt: OffsetDateTime,
+        completedAt: OffsetDateTime,
+        error: String
+    ) {
+        jdbcTemplate.update(
+            """
+            INSERT INTO retention_run_history(
+                status,
+                retention_days,
+                deleted_service_checks,
+                deleted_alert_events,
+                deleted_resolved_incidents,
+                started_at,
+                completed_at,
+                error
+            )
+            VALUES ('FAILED', ?, 0, 0, 0, ?, ?, ?)
+            """.trimIndent(),
+            retentionDays,
+            startedAt,
+            completedAt,
+            error
+        )
+    }
+
     fun findLatest(): RetentionRunRecord? {
         return jdbcTemplate.query(
             """

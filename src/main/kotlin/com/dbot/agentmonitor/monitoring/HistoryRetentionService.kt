@@ -11,13 +11,17 @@ data class HistoryRetentionResult(
     val deletedResolvedIncidents: Int
 )
 
+interface HistoryRetentionPruner {
+    fun prune(now: OffsetDateTime, retentionDays: Long = HistoryRetentionService.DEFAULT_RETENTION_DAYS): HistoryRetentionResult
+}
+
 @Service
 class HistoryRetentionService(
     private val jdbcTemplate: JdbcTemplate
-) {
+) : HistoryRetentionPruner {
 
     @Transactional
-    fun prune(now: OffsetDateTime, retentionDays: Long = DEFAULT_RETENTION_DAYS): HistoryRetentionResult {
+    override fun prune(now: OffsetDateTime, retentionDays: Long): HistoryRetentionResult {
         val cutoff = now.minusDays(retentionDays)
 
         val deletedServiceChecks = jdbcTemplate.update(
