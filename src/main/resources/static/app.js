@@ -65,15 +65,37 @@ function renderSummary(summary) {
     ["Registered services", summary.registeredServices],
     ["Enabled services", summary.enabledServices],
     ["Open incidents", summary.openIncidents],
-    ["Monitor status", summary.status]
+    ["Monitor status", summary.status],
+    ["Retention cleanup", renderRetentionSummary(summary.retention)]
   ];
 
   summaryCards.innerHTML = cards.map(([label, value]) => `
-    <article class="summary-card ${label === "Monitor status" ? "status-card" : ""}">
+    <article class="summary-card ${label === "Monitor status" ? "status-card" : ""} ${label === "Retention cleanup" ? "retention-card" : ""}">
       <span class="label">${label}</span>
       <div class="value">${label === "Monitor status" ? `<span class="status-pill">${value}</span>` : value}</div>
     </article>
   `).join("");
+}
+
+function renderRetentionSummary(retention) {
+  const lastRun = retention?.lastRun;
+
+  if (!lastRun) {
+    return `
+      <span class="retention-empty">No cleanup yet</span>
+    `;
+  }
+
+  const deletedTotal =
+    Number(lastRun.deletedServiceChecks || 0) +
+    Number(lastRun.deletedAlertEvents || 0) +
+    Number(lastRun.deletedResolvedIncidents || 0);
+
+  return `
+    <span class="status-pill ${String(lastRun.status || "").toLowerCase()}">${escapeHtml(lastRun.status || "UNKNOWN")}</span>
+    <span class="retention-meta">${escapeHtml(formatDateTime(lastRun.completedAt || lastRun.startedAt))}</span>
+    <span class="retention-count">${deletedTotal} rows pruned</span>
+  `;
 }
 
 function badgeClass(status) {

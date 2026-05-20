@@ -53,3 +53,15 @@ CREATE TABLE IF NOT EXISTS alert_event (
     message TEXT NOT NULL,
     sent_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS retention_run_history (
+    id BIGSERIAL PRIMARY KEY,
+    status VARCHAR(30) NOT NULL,
+    retention_days BIGINT NOT NULL,
+    deleted_service_checks INTEGER NOT NULL DEFAULT 0,
+    deleted_alert_events INTEGER NOT NULL DEFAULT 0,
+    deleted_resolved_incidents INTEGER NOT NULL DEFAULT 0,
+    started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    error TEXT
+);

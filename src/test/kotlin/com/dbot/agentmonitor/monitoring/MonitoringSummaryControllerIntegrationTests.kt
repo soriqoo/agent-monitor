@@ -23,6 +23,7 @@ class MonitoringSummaryControllerIntegrationTests {
 
     @BeforeEach
     fun setUp() {
+        jdbcTemplate.update("DELETE FROM retention_run_history")
         jdbcTemplate.update("DELETE FROM alert_event")
         jdbcTemplate.update("DELETE FROM incident")
         jdbcTemplate.update("DELETE FROM service_current_status")
@@ -67,6 +68,7 @@ class MonitoringSummaryControllerIntegrationTests {
             .jsonPath("$.enabledServices").isEqualTo(1)
             .jsonPath("$.openIncidents").isEqualTo(1)
             .jsonPath("$.status").isEqualTo("BOOTSTRAPPED")
+            .jsonPath("$.retention.lastRun").doesNotExist()
     }
 
     @Test
@@ -126,5 +128,38 @@ class MonitoringSummaryControllerIntegrationTests {
             .jsonPath("$.registeredServices").isEqualTo(3)
             .jsonPath("$.enabledServices").isEqualTo(2)
             .jsonPath("$.openIncidents").isEqualTo(1)
+    }
+
+    @Test
+    fun summaryReturnsLatestRetentionRun() {
+        jdbcTemplate.update(
+            """
+            INSERT INTO retention_run_history(
+                status,
+                retention_days,
+                deleted_service_checks,
+                deleted_alert_events,
+                deleted_resolved_incidents,
+                started_at,
+                completed_at,
+                error
+            )
+            VALUES ('SUCCESS', 30, 4, 2, 1, ?, ?, NULL)
+            """.trimIndent(),
+            "2026-05-19T03:30:00+09:00",
+            "2026-05-19T03:30:02+09:00"
+        )
+
+        webTestClient.get()
+            .uri("/internal/monitoring/summary")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.retention.lastRun.status").isEqualTo("SUCCESS")
+            .jsonPath("$.retention.lastRun.retentionDays").isEqualTo(30)
+            .jsonPath("$.retention.lastRun.deletedServiceChecks").isEqualTo(4)
+            .jsonPath("$.retention.lastRun.deletedAlertEvents").isEqualTo(2)
+            .jsonPath("$.retention.lastRun.deletedResolvedIncidents").isEqualTo(1)
+            .jsonPath("$.retention.lastRun.completedAt").isEqualTo("2026-05-19T03:30:02+09:00")
     }
 }
