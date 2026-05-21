@@ -70,6 +70,12 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("renderRetentionSummary")) {
                     "Dashboard script should render retention cleanup visibility."
                 }
+                require(body.contains("/api/monitoring/retention/run")) {
+                    "Dashboard script should call the manual retention cleanup endpoint."
+                }
+                require(body.contains("Run cleanup")) {
+                    "Dashboard script should expose a manual retention cleanup action."
+                }
             }
     }
 }

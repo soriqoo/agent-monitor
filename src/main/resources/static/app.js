@@ -83,6 +83,9 @@ function renderRetentionSummary(retention) {
   if (!lastRun) {
     return `
       <span class="retention-empty">No cleanup yet</span>
+      <button class="retention-run-button" type="button" data-action="run-retention-cleanup">
+        Run cleanup
+      </button>
     `;
   }
 
@@ -95,6 +98,9 @@ function renderRetentionSummary(retention) {
     <span class="status-pill ${String(lastRun.status || "").toLowerCase()}">${escapeHtml(lastRun.status || "UNKNOWN")}</span>
     <span class="retention-meta">${escapeHtml(formatDateTime(lastRun.completedAt || lastRun.startedAt))}</span>
     <span class="retention-count">${deletedTotal} rows pruned</span>
+    <button class="retention-run-button" type="button" data-action="run-retention-cleanup">
+      Run cleanup
+    </button>
   `;
 }
 
@@ -777,6 +783,43 @@ async function checkServiceNow(row, button) {
   }
 }
 
+async function runRetentionCleanup(button) {
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Running...";
+  setFormMessage("Running retention cleanup now...");
+
+  try {
+    const result = await fetchJson("/api/monitoring/retention/run", { method: "POST" });
+    const deletedTotal =
+      Number(result.deletedServiceChecks || 0) +
+      Number(result.deletedAlertEvents || 0) +
+      Number(result.deletedResolvedIncidents || 0);
+
+    if (result.status === "FAILED") {
+      setFormMessage(`Retention cleanup failed: ${result.error || "unknown error"}`, "error");
+    } else {
+      setFormMessage(`Retention cleanup completed. ${deletedTotal} rows pruned.`, "success");
+    }
+
+    await loadDashboard();
+  } catch (error) {
+    setFormMessage(`Retention cleanup request failed: ${error.message}`, "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function handleSummaryAction(event) {
+  const button = event.target.closest("button[data-action='run-retention-cleanup']");
+  if (!button) {
+    return;
+  }
+
+  await runRetentionCleanup(button);
+}
+
 async function handleTableAction(event) {
   const button = event.target.closest("button[data-action]");
   if (!button) {
@@ -875,6 +918,7 @@ function handleHistoryAction(event) {
 form.addEventListener("submit", submitForm);
 resetButton.addEventListener("click", resetForm);
 refreshButton.addEventListener("click", loadDashboard);
+summaryCards.addEventListener("click", handleSummaryAction);
 servicesList.addEventListener("click", handleTableAction);
 serviceDetailPanel.addEventListener("click", handleHistoryAction);
 incidentHistoryList.addEventListener("click", handleHistoryAction);
