@@ -173,12 +173,45 @@ Runtime layout:
 Available helper commands:
 - `./agent-monitor.sh sync`
 - `./agent-monitor.sh deploy`
+- `./agent-monitor.sh deploy-demo`
 - `./agent-monitor.sh ps`
+- `./agent-monitor.sh ps-demo`
 - `./agent-monitor.sh logs`
+- `./agent-monitor.sh logs-demo`
 - `./agent-monitor.sh logs-follow`
 - `./agent-monitor.sh health`
 - `./agent-monitor.sh summary`
 - `./agent-monitor.sh status`
+
+## Demo Target Service
+
+The repository includes a disposable monitored target under
+[`examples/dummy-monitored-service`](D:/Toy_Project/agent-monitor/examples/dummy-monitored-service).
+Use it to validate multi-service polling and dashboard behavior before another
+real service is ready.
+
+Start Agent Monitor with the demo target:
+
+```bash
+./agent-monitor.sh deploy-demo
+./agent-monitor.sh ps-demo
+./agent-monitor.sh logs-demo
+```
+
+Then register the demo target from the dashboard:
+
+- Service name: `dummy-monitored-service`
+- Base URL: `http://dummy-monitored-service:8080`
+- Environment: `demo`
+- Enabled: checked
+
+You can simulate target behavior with `.env` values used by
+`docker-compose.demo.yml`:
+
+- `DUMMY_HEALTH_STATUS=UP` or `DOWN`
+- `DUMMY_RUN_STATUS=SENT` or `FAILED`
+- `DUMMY_LAST_RUN_DATE=2026-05-21`
+- `DUMMY_ERROR=sample failure`
 
 Recommended convention:
 - keep project-specific runtime scripts in `runtime/<service>.sh`

@@ -1,0 +1,22 @@
+services:
+  dummy-monitored-service:
+    build:
+      context: ./examples/dummy-monitored-service
+    container_name: dummy-monitored-service
+    restart: unless-stopped
+    environment:
+      - DUMMY_SERVICE_NAME=${DUMMY_SERVICE_NAME:-dummy-monitored-service}
+      - DUMMY_ENVIRONMENT=${DUMMY_ENVIRONMENT:-demo}
+      - DUMMY_TIMEZONE=${DUMMY_TIMEZONE:-Asia/Seoul}
+      - DUMMY_HEALTH_STATUS=${DUMMY_HEALTH_STATUS:-UP}
+      - DUMMY_RUN_STATUS=${DUMMY_RUN_STATUS:-SENT}
+      - DUMMY_LAST_RUN_DATE=${DUMMY_LAST_RUN_DATE:-2026-05-21}
+      - DUMMY_ERROR=${DUMMY_ERROR:-}
+    networks:
+      - monitoring-shared
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/8080'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

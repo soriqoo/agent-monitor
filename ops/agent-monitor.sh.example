@@ -73,6 +73,15 @@ compose() {
   )
 }
 
+compose_demo() {
+  require_env_file
+  require_repo_dir
+  (
+    cd "$REPO_DIR"
+    docker compose --env-file "$ENV_FILE" -f docker-compose.yml -f docker-compose.demo.yml "$@"
+  )
+}
+
 app_port() {
   echo "${AGENT_MONITOR_PORT:-18080}"
 }
@@ -91,8 +100,11 @@ Commands:
   sync        Fetch origin, switch to main, and reset to origin/main
   version     Show local HEAD, tracked origin/main, and divergence
   deploy      Rebuild and recreate the docker compose stack
+  deploy-demo Start the stack with the dummy monitored service example
   ps          Show compose service status
+  ps-demo     Show compose service status including demo services
   logs        Show recent agent-monitor logs
+  logs-demo   Show recent dummy monitored service logs
   logs-follow Follow agent-monitor logs
   health      Call /actuator/health
   summary     Call /internal/monitoring/summary
@@ -183,12 +195,25 @@ run_deploy() {
   compose up -d --build --force-recreate
 }
 
+run_deploy_demo() {
+  load_env_file
+  compose_demo up -d --build --force-recreate
+}
+
 run_ps() {
   compose ps
 }
 
+run_ps_demo() {
+  compose_demo ps
+}
+
 run_logs() {
   compose logs --tail "$DEFAULT_LOG_LINES" agent-monitor
+}
+
+run_logs_demo() {
+  compose_demo logs --tail "$DEFAULT_LOG_LINES" dummy-monitored-service
 }
 
 run_logs_follow() {
@@ -229,11 +254,20 @@ main() {
     deploy)
       run_deploy
       ;;
+    deploy-demo)
+      run_deploy_demo
+      ;;
     ps)
       run_ps
       ;;
+    ps-demo)
+      run_ps_demo
+      ;;
     logs)
       run_logs
+      ;;
+    logs-demo)
+      run_logs_demo
       ;;
     logs-follow)
       run_logs_follow
