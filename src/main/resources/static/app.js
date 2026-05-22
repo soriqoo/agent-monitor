@@ -6,6 +6,7 @@ const incidentHistoryList = document.getElementById("incidentHistoryList");
 const alertHistoryList = document.getElementById("alertHistoryList");
 const form = document.getElementById("serviceForm");
 const formTitle = document.getElementById("formTitle");
+const probeButton = document.getElementById("probeButton");
 const submitButton = document.getElementById("submitButton");
 const resetButton = document.getElementById("resetButton");
 const refreshButton = document.getElementById("refreshButton");
@@ -19,6 +20,7 @@ const environmentInput = document.getElementById("environment");
 const enabledInput = document.getElementById("enabled");
 
 const HISTORY_PREVIEW_COUNT = 2;
+const PROBE_BUTTON_TEXT = "Test connection";
 
 let serviceRows = [];
 let selectedServiceId = null;
@@ -736,6 +738,57 @@ async function submitForm(event) {
   }
 }
 
+function currentFormPayload() {
+  return {
+    serviceName: serviceNameInput.value.trim(),
+    baseUrl: baseUrlInput.value.trim(),
+    environment: environmentInput.value.trim(),
+    enabled: enabledInput.checked
+  };
+}
+
+async function probeServiceConnection() {
+  const payload = currentFormPayload();
+
+  if (!payload.serviceName || !payload.baseUrl || !payload.environment) {
+    setFormMessage("Enter service name, base URL, and environment before testing.", "error");
+    return;
+  }
+
+  const originalText = probeButton.textContent || PROBE_BUTTON_TEXT;
+  probeButton.disabled = true;
+  probeButton.textContent = "Testing...";
+  setFormMessage(`Testing connection to ${payload.serviceName}...`);
+
+  try {
+    const result = await fetchJson("/api/monitored-services/probe", {
+      method: "POST",
+      body: JSON.stringify({
+        serviceName: payload.serviceName,
+        baseUrl: payload.baseUrl,
+        environment: payload.environment
+      })
+    });
+
+    const parts = [
+      `health=${result.healthStatus || "UNKNOWN"}`,
+      `run=${result.runStatus || "N/A"}`,
+      `lastRun=${result.lastRunDate || "-"}`
+    ];
+
+    if (result.error) {
+      setFormMessage(`Connection tested with warning: ${parts.join(", ")}. ${result.error}`, "error");
+    } else {
+      setFormMessage(`Connection OK: ${parts.join(", ")}.`, "success");
+    }
+  } catch (error) {
+    setFormMessage(`Connection test failed: ${error.message}`, "error");
+  } finally {
+    probeButton.disabled = false;
+    probeButton.textContent = originalText;
+  }
+}
+
 async function toggleServiceEnabled(row, button) {
   const nextEnabled = !row.enabled;
   const payload = {
@@ -916,6 +969,7 @@ function handleHistoryAction(event) {
 }
 
 form.addEventListener("submit", submitForm);
+probeButton.addEventListener("click", probeServiceConnection);
 resetButton.addEventListener("click", resetForm);
 refreshButton.addEventListener("click", loadDashboard);
 summaryCards.addEventListener("click", handleSummaryAction);

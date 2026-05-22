@@ -76,6 +76,12 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("Run cleanup")) {
                     "Dashboard script should expose a manual retention cleanup action."
                 }
+                require(body.contains("/api/monitored-services/probe")) {
+                    "Dashboard script should call the monitored service probe endpoint."
+                }
+                require(body.contains("Test connection")) {
+                    "Dashboard script should expose a test connection action."
+                }
             }
     }
 }

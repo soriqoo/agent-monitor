@@ -3,11 +3,13 @@ package com.dbot.agentmonitor.registry
 import com.dbot.agentmonitor.domain.MonitoredService
 import com.dbot.agentmonitor.domain.MonitoredServiceDetailSnapshot
 import com.dbot.agentmonitor.domain.MonitoredServiceOverview
+import com.dbot.agentmonitor.domain.ServicePollResult
 import com.dbot.agentmonitor.store.AlertEventStore
 import com.dbot.agentmonitor.store.IncidentStore
 import com.dbot.agentmonitor.store.MonitoredServiceStore
 import com.dbot.agentmonitor.store.ServiceStatusStore
 import com.dbot.agentmonitor.polling.ServicePollingCommand
+import com.dbot.agentmonitor.polling.ServicePollingService
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -36,7 +38,8 @@ class MonitoredServiceController(
     private val incidentStore: IncidentStore,
     private val alertEventStore: AlertEventStore,
     private val serviceStatusStore: ServiceStatusStore,
-    private val servicePollingCommand: ServicePollingCommand
+    private val servicePollingCommand: ServicePollingCommand,
+    private val servicePollingService: ServicePollingService
 ) {
     @GetMapping
     fun list(): List<MonitoredService> {
@@ -70,6 +73,20 @@ class MonitoredServiceController(
 
             servicePollingCommand.pollAndRecord(service)
             detailSnapshot(id, limit)
+        }.subscribeOn(Schedulers.boundedElastic())
+
+    @PostMapping("/probe")
+    fun probe(@Valid @RequestBody request: ProbeMonitoredServiceRequest): Mono<ServicePollResult> =
+        Mono.fromCallable {
+            servicePollingService.poll(
+                MonitoredService(
+                    id = 0,
+                    serviceName = request.serviceName,
+                    baseUrl = request.baseUrl,
+                    environment = request.environment,
+                    enabled = true
+                )
+            )
         }.subscribeOn(Schedulers.boundedElastic())
 
     private fun detailSnapshot(id: Long, limit: Int): MonitoredServiceDetailSnapshot {
@@ -154,4 +171,16 @@ data class UpsertMonitoredServiceRequest(
     @field:Size(max = 50)
     val environment: String,
     val enabled: Boolean = true
+)
+
+data class ProbeMonitoredServiceRequest(
+    @field:NotBlank
+    @field:Size(max = 100)
+    val serviceName: String,
+    @field:NotBlank
+    @field:Size(max = 255)
+    val baseUrl: String,
+    @field:NotBlank
+    @field:Size(max = 50)
+    val environment: String
 )
