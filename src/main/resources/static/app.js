@@ -4,6 +4,7 @@ const serviceDetailPanel = document.getElementById("serviceDetailPanel");
 const checkHistoryList = document.getElementById("checkHistoryList");
 const incidentHistoryList = document.getElementById("incidentHistoryList");
 const alertHistoryList = document.getElementById("alertHistoryList");
+const actionHistoryList = document.getElementById("actionHistoryList");
 const form = document.getElementById("serviceForm");
 const formTitle = document.getElementById("formTitle");
 const probeButton = document.getElementById("probeButton");
@@ -458,6 +459,32 @@ function renderAlertHistory(items) {
   `;
 }
 
+function renderActionHistory(items) {
+  if (!items.length) {
+    actionHistoryList.innerHTML = renderEmptyHistory(
+      "No operator actions recorded yet.",
+      "Create, update, check, probe, and cleanup actions will appear here."
+    );
+    return;
+  }
+
+  actionHistoryList.innerHTML = items.map((item) => `
+    <article class="history-item action-history-item">
+      <div class="history-item-top">
+        <div class="history-title-block">
+          <span class="history-title">${escapeHtml(formatActionType(item.actionType))}</span>
+          <span class="history-subtitle">${escapeHtml(formatActionTarget(item))}</span>
+        </div>
+        <span class="badge ${actionStatusClass(item.status)}">${escapeHtml(item.status || "UNKNOWN")}</span>
+      </div>
+      <div class="history-meta-lines">
+        <span>${escapeHtml(formatDateTime(item.createdAt))}</span>
+      </div>
+      ${renderHistoryCopy(item.message)}
+    </article>
+  `).join("");
+}
+
 function renderEmptyHistory(title, copy) {
   return `
     <article class="empty-state history-empty-state">
@@ -656,6 +683,32 @@ function formatDateTime(value) {
   }).format(parsed);
 }
 
+function actionStatusClass(status) {
+  switch ((status || "").toUpperCase()) {
+    case "SUCCESS":
+      return "up";
+    case "WARNING":
+      return "degraded";
+    case "FAILED":
+      return "down";
+    default:
+      return "muted";
+  }
+}
+
+function formatActionTarget(item) {
+  const serviceName = item.targetServiceName || "agent-monitor";
+  const environment = item.targetEnvironment ? ` / ${item.targetEnvironment}` : "";
+  return `${serviceName}${environment}`;
+}
+
+function formatActionType(value) {
+  return String(value || "ACTION")
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function formatAlertType(value) {
   return String(value || "ALERT")
     .replaceAll("_", " ")
@@ -666,16 +719,18 @@ function formatAlertType(value) {
 async function loadDashboard() {
   setFormMessage("");
 
-  const [summary, overview, history, checks] = await Promise.all([
+  const [summary, overview, history, checks, actions] = await Promise.all([
     fetchJson("/internal/monitoring/summary"),
     fetchJson("/api/monitored-services/overview"),
     fetchJson("/api/monitoring/history?limit=6"),
-    fetchJson("/api/monitoring/checks?limit=4")
+    fetchJson("/api/monitoring/checks?limit=4"),
+    fetchJson("/api/monitoring/actions?limit=6")
   ]);
 
   renderSummary(summary);
   renderCheckHistory(checks);
   renderHistory(history);
+  renderActionHistory(actions);
 
   if (!overview.length) {
     selectedServiceId = null;
