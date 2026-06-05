@@ -37,6 +37,9 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("Recent Checks")) {
                     "Dashboard page should contain the recent service checks heading."
                 }
+                require(body.contains("Recent Actions")) {
+                    "Dashboard page should contain the operator action history heading."
+                }
                 require(body.contains("Service Detail")) {
                     "Dashboard page should contain the service detail panel."
                 }
@@ -64,8 +67,14 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("/api/monitoring/checks?limit=4")) {
                     "Dashboard script should load recent service checks."
                 }
+                require(body.contains("/api/monitoring/actions?limit=6")) {
+                    "Dashboard script should load recent operator actions."
+                }
                 require(body.contains("renderCheckHistory")) {
                     "Dashboard script should render recent service checks."
+                }
+                require(body.contains("renderActionHistory")) {
+                    "Dashboard script should render recent operator actions."
                 }
                 require(body.contains("renderRetentionSummary")) {
                     "Dashboard script should render retention cleanup visibility."

@@ -7,6 +7,7 @@ import com.dbot.agentmonitor.domain.ServicePollResult
 import com.dbot.agentmonitor.store.AlertEventStore
 import com.dbot.agentmonitor.store.IncidentStore
 import com.dbot.agentmonitor.store.MonitoredServiceStore
+import com.dbot.agentmonitor.store.OperatorActionStore
 import com.dbot.agentmonitor.store.ServiceStatusStore
 import com.dbot.agentmonitor.polling.ServicePollingCommand
 import com.dbot.agentmonitor.polling.ServicePollingService
@@ -39,7 +40,8 @@ class MonitoredServiceController(
     private val alertEventStore: AlertEventStore,
     private val serviceStatusStore: ServiceStatusStore,
     private val servicePollingCommand: ServicePollingCommand,
-    private val servicePollingService: ServicePollingService
+    private val servicePollingService: ServicePollingService,
+    private val operatorActionStore: OperatorActionStore
 ) {
     @GetMapping
     fun list(): List<MonitoredService> {
@@ -72,6 +74,15 @@ class MonitoredServiceController(
                 )
 
             servicePollingCommand.pollAndRecord(service)
+                .also { result ->
+                    operatorActionStore.record(
+                        actionType = "MANUAL_CHECK",
+                        targetServiceName = service.serviceName,
+                        targetEnvironment = service.environment,
+                        status = if (result.error == null) "SUCCESS" else "WARNING",
+                        message = "Manual check completed. healthStatus=${result.healthStatus}, runStatus=${result.runStatus}"
+                    )
+                }
             detailSnapshot(id, limit)
         }.subscribeOn(Schedulers.boundedElastic())
 
@@ -86,7 +97,15 @@ class MonitoredServiceController(
                     environment = request.environment,
                     enabled = true
                 )
-            )
+            ).also { result ->
+                operatorActionStore.record(
+                    actionType = "CONNECTION_PROBE",
+                    targetServiceName = request.serviceName,
+                    targetEnvironment = request.environment,
+                    status = if (result.error == null) "SUCCESS" else "WARNING",
+                    message = "Connection probe completed. healthStatus=${result.healthStatus}, runStatus=${result.runStatus}"
+                )
+            }
         }.subscribeOn(Schedulers.boundedElastic())
 
     private fun detailSnapshot(id: Long, limit: Int): MonitoredServiceDetailSnapshot {
@@ -114,7 +133,15 @@ class MonitoredServiceController(
                 baseUrl = request.baseUrl,
                 environment = request.environment,
                 enabled = request.enabled
-            )
+            ).also { created ->
+                operatorActionStore.record(
+                    actionType = "SERVICE_CREATED",
+                    targetServiceName = created.serviceName,
+                    targetEnvironment = created.environment,
+                    status = "SUCCESS",
+                    message = "Monitored service created. enabled=${created.enabled}"
+                )
+            }
         } catch (_: DataIntegrityViolationException) {
             throw ResponseStatusException(
                 HttpStatus.CONFLICT,
@@ -129,7 +156,13 @@ class MonitoredServiceController(
         @Valid @RequestBody request: UpsertMonitoredServiceRequest
     ): MonitoredService {
         return try {
-            monitoredServiceStore.update(
+            val before = monitoredServiceStore.findById(id)
+                ?: throw ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Monitored service not found. id=$id"
+                )
+
+            val updated = monitoredServiceStore.update(
                 id = id,
                 serviceName = request.serviceName,
                 baseUrl = request.baseUrl,
@@ -139,6 +172,22 @@ class MonitoredServiceController(
                 HttpStatus.NOT_FOUND,
                 "Monitored service not found. id=$id"
             )
+
+            val actionType = when {
+                before.enabled && !updated.enabled -> "SERVICE_DISABLED"
+                !before.enabled && updated.enabled -> "SERVICE_ENABLED"
+                else -> "SERVICE_UPDATED"
+            }
+
+            operatorActionStore.record(
+                actionType = actionType,
+                targetServiceName = updated.serviceName,
+                targetEnvironment = updated.environment,
+                status = "SUCCESS",
+                message = "Monitored service updated. enabled=${updated.enabled}"
+            )
+
+            updated
         } catch (_: DataIntegrityViolationException) {
             throw ResponseStatusException(
                 HttpStatus.CONFLICT,
@@ -150,6 +199,11 @@ class MonitoredServiceController(
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) {
+        val service = monitoredServiceStore.findById(id)
+            ?: throw ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Monitored service not found. id=$id"
+            )
         val deleted = monitoredServiceStore.delete(id)
         if (!deleted) {
             throw ResponseStatusException(
@@ -157,6 +211,14 @@ class MonitoredServiceController(
                 "Monitored service not found. id=$id"
             )
         }
+
+        operatorActionStore.record(
+            actionType = "SERVICE_DELETED",
+            targetServiceName = service.serviceName,
+            targetEnvironment = service.environment,
+            status = "SUCCESS",
+            message = "Monitored service deleted."
+        )
     }
 }
 

@@ -50,6 +50,16 @@ data class RecentAlertEvent(
     val sentAt: OffsetDateTime
 )
 
+data class RecentOperatorAction(
+    val id: Long,
+    val actionType: String,
+    val targetServiceName: String?,
+    val targetEnvironment: String?,
+    val status: String,
+    val message: String?,
+    val createdAt: OffsetDateTime
+)
+
 data class RecentServiceCheck(
     val healthStatus: String,
     val runStatus: String?,

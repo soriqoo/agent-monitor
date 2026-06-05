@@ -65,3 +65,13 @@ CREATE TABLE IF NOT EXISTS retention_run_history (
     completed_at TIMESTAMP WITH TIME ZONE,
     error TEXT
 );
+
+CREATE TABLE IF NOT EXISTS operator_action_event (
+    id BIGSERIAL PRIMARY KEY,
+    action_type VARCHAR(50) NOT NULL,
+    target_service_name VARCHAR(100),
+    target_environment VARCHAR(50),
+    status VARCHAR(30) NOT NULL,
+    message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
