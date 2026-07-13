@@ -14,7 +14,8 @@ data class MonitoredService(
     val serviceName: String,
     val baseUrl: String,
     val environment: String,
-    val enabled: Boolean
+    val enabled: Boolean,
+    val observationFailureOpenThreshold: Int? = null
 )
 
 data class MonitoredServiceOverview(
@@ -28,7 +29,8 @@ data class MonitoredServiceOverview(
     val lastRunDate: String?,
     val lastCheckedAt: OffsetDateTime?,
     val error: String?,
-    val openIncident: Boolean
+    val openIncident: Boolean,
+    val observationFailureOpenThreshold: Int? = null
 )
 
 data class RecentIncident(

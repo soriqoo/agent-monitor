@@ -34,7 +34,8 @@ class MonitoredServiceSeedInitializer(
                 serviceName = service.serviceName,
                 baseUrl = service.baseUrl,
                 environment = service.environment,
-                enabled = service.enabled
+                enabled = service.enabled,
+                observationFailureOpenThreshold = service.observationFailureOpenThreshold
             )
             log.info(
                 "Seeded monitored service. serviceName={}, environment={}, baseUrl={}, enabled={}",

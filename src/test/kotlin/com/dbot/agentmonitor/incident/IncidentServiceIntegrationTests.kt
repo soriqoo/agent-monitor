@@ -1,5 +1,6 @@
 package com.dbot.agentmonitor.incident
 
+import com.dbot.agentmonitor.domain.MonitoredService
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import com.dbot.agentmonitor.domain.ServicePollResult
 import com.dbot.agentmonitor.store.ServiceStatusStore
@@ -120,6 +121,36 @@ class IncidentServiceIntegrationTests {
     }
 
     @Test
+    fun serviceSpecificThresholdOverridesGlobalObservationFailureThreshold() {
+        val service = MonitoredService(
+            id = 1,
+            serviceName = "custom-policy-service",
+            baseUrl = "http://custom-policy-service:8080",
+            environment = "prod",
+            enabled = true,
+            observationFailureOpenThreshold = 2
+        )
+        val observationFailure = ServicePollResult(
+            serviceName = service.serviceName,
+            environment = service.environment,
+            healthStatus = ServiceCheckStatus.DEGRADED,
+            runStatus = null,
+            lastRunDate = null,
+            lastSuccessAt = null,
+            checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
+            responseTimeMs = 3100,
+            error = "Last-run request failed: timeout"
+        )
+
+        recordAndApply(service, observationFailure)
+        assertThat(openIncidentCount(service.serviceName, service.environment)).isZero()
+
+        recordAndApply(service, observationFailure.copy(checkedAt = observationFailure.checkedAt.plusMinutes(5)))
+
+        assertThat(openIncidentCount(service.serviceName, service.environment)).isEqualTo(1)
+    }
+
+    @Test
     fun nonConsecutiveObservationFailuresDoNotOpenIncident() {
         val observationFailure = ServicePollResult(
             serviceName = "dmib",
@@ -234,5 +265,10 @@ class IncidentServiceIntegrationTests {
     private fun recordAndApply(result: ServicePollResult) {
         serviceStatusStore.recordPollResult(result)
         incidentService.applyPollResult(result)
+    }
+
+    private fun recordAndApply(service: MonitoredService, result: ServicePollResult) {
+        serviceStatusStore.recordPollResult(result)
+        incidentService.applyPollResult(service, result)
     }
 }
