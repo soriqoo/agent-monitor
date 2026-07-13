@@ -9,6 +9,13 @@ enum class ServiceCheckStatus {
     UNKNOWN
 }
 
+enum class PollFailureType {
+    NONE,
+    HEALTH_FAILURE,
+    EXECUTION_FAILURE,
+    OBSERVATION_FAILURE
+}
+
 data class MonitoredService(
     val id: Long,
     val serviceName: String,
@@ -113,5 +120,6 @@ data class ServicePollResult(
     val lastSuccessAt: OffsetDateTime?,
     val checkedAt: OffsetDateTime,
     val responseTimeMs: Long,
-    val error: String?
+    val error: String?,
+    val failureType: PollFailureType = PollFailureType.NONE
 )

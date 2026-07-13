@@ -2,6 +2,7 @@ package com.dbot.agentmonitor.polling
 
 import com.dbot.agentmonitor.config.AppProperties
 import com.dbot.agentmonitor.domain.MonitoredService
+import com.dbot.agentmonitor.domain.PollFailureType
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -68,6 +69,7 @@ class ServicePollingServiceTests {
         assertThat(result.lastSuccessAt?.toInstant())
             .isEqualTo(OffsetDateTime.parse("2026-04-01T08:00:03+09:00").toInstant())
         assertThat(result.error).isNull()
+        assertThat(result.failureType).isEqualTo(PollFailureType.NONE)
         assertThat(server.takeRequest().path).isEqualTo("/actuator/health")
         assertThat(server.takeRequest().path).isEqualTo("/internal/monitoring/last-run")
     }
@@ -93,6 +95,7 @@ class ServicePollingServiceTests {
         assertThat(result.lastRunDate).isNull()
         assertThat(result.lastSuccessAt).isNull()
         assertThat(result.error).contains("Last-run request failed")
+        assertThat(result.failureType).isEqualTo(PollFailureType.OBSERVATION_FAILURE)
     }
 
     @Test
@@ -111,6 +114,58 @@ class ServicePollingServiceTests {
         assertThat(result.lastRunDate).isNull()
         assertThat(result.lastSuccessAt).isNull()
         assertThat(result.error).contains("Health request failed")
+        assertThat(result.failureType).isEqualTo(PollFailureType.HEALTH_FAILURE)
+    }
+
+    @Test
+    fun pollClassifiesNonUpHealthResponseAsHealthFailure() {
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"status":"OUT_OF_SERVICE"}""")
+        )
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"status":"SENT","lastRunDate":"2026-04-01"}""")
+        )
+
+        val result = servicePollingService.poll(monitoredService())
+
+        assertThat(result.healthStatus).isEqualTo(ServiceCheckStatus.DEGRADED)
+        assertThat(result.failureType).isEqualTo(PollFailureType.HEALTH_FAILURE)
+        assertThat(result.error).contains("Health endpoint reported status=OUT_OF_SERVICE")
+    }
+
+    @Test
+    fun pollClassifiesExplicitRunFailure() {
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"status":"UP"}""")
+        )
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """
+                    {
+                      "service": "dmib",
+                      "environment": "prod",
+                      "lastRunDate": "2026-04-01",
+                      "status": "FAILED",
+                      "sentAt": "2026-04-01T08:00:03+09:00",
+                      "error": "execution failed"
+                    }
+                    """.trimIndent()
+                )
+        )
+
+        val result = servicePollingService.poll(monitoredService())
+
+        assertThat(result.healthStatus).isEqualTo(ServiceCheckStatus.UP)
+        assertThat(result.runStatus).isEqualTo("FAILED")
+        assertThat(result.failureType).isEqualTo(PollFailureType.EXECUTION_FAILURE)
     }
 
     private fun monitoredService(): MonitoredService {

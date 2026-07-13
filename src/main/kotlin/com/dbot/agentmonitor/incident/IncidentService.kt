@@ -3,6 +3,7 @@ package com.dbot.agentmonitor.incident
 import com.dbot.agentmonitor.alert.SlackAlertService
 import com.dbot.agentmonitor.config.AppProperties
 import com.dbot.agentmonitor.domain.MonitoredService
+import com.dbot.agentmonitor.domain.PollFailureType
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import com.dbot.agentmonitor.domain.ServicePollResult
 import com.dbot.agentmonitor.store.IncidentStore
@@ -17,10 +18,6 @@ class IncidentService(
     private val appProperties: AppProperties,
     private val slackAlertService: SlackAlertService
 ) {
-    companion object {
-        private val EXECUTION_FAILURE_STATUSES = setOf("FAILED", "ERROR")
-    }
-
     @Transactional
     fun applyPollResult(result: ServicePollResult) {
         applyPollResult(result, appProperties.monitoring.observationFailureOpenThreshold)
@@ -60,40 +57,28 @@ class IncidentService(
     }
 
     private fun shouldOpenIncident(result: ServicePollResult, observationFailureThreshold: Int): Boolean {
-        if (isImmediateHealthFailure(result)) {
-            return true
-        }
+        return when (result.failureType) {
+            PollFailureType.HEALTH_FAILURE,
+            PollFailureType.EXECUTION_FAILURE -> true
 
-        if (isExecutionFailure(result.runStatus)) {
-            return true
-        }
+            PollFailureType.OBSERVATION_FAILURE ->
+                hasReachedObservationFailureThreshold(result, observationFailureThreshold)
 
-        return hasReachedObservationFailureThreshold(result, observationFailureThreshold)
+            PollFailureType.NONE -> false
+        }
     }
 
     private fun shouldCloseIncident(result: ServicePollResult): Boolean {
         return result.healthStatus == ServiceCheckStatus.UP &&
             result.error == null &&
-            !isExecutionFailure(result.runStatus)
-    }
-
-    private fun isExecutionFailure(runStatus: String?): Boolean {
-        return runStatus?.uppercase() in EXECUTION_FAILURE_STATUSES
-    }
-
-    private fun isImmediateHealthFailure(result: ServicePollResult): Boolean {
-        if (result.healthStatus == ServiceCheckStatus.DOWN || result.healthStatus == ServiceCheckStatus.UNKNOWN) {
-            return true
-        }
-
-        return result.error?.startsWith("Health ") == true
+            result.failureType == PollFailureType.NONE
     }
 
     private fun hasReachedObservationFailureThreshold(
         result: ServicePollResult,
         threshold: Int
     ): Boolean {
-        if (!isObservationFailure(result)) {
+        if (result.failureType != PollFailureType.OBSERVATION_FAILURE) {
             return false
         }
 
@@ -102,16 +87,6 @@ class IncidentService(
             return false
         }
 
-        return recentChecks.all { isObservationFailure(it.healthStatus, it.runStatus, it.error) }
-    }
-
-    private fun isObservationFailure(result: ServicePollResult): Boolean {
-        return isObservationFailure(result.healthStatus.name, result.runStatus, result.error)
-    }
-
-    private fun isObservationFailure(healthStatus: String, runStatus: String?, error: String?): Boolean {
-        return healthStatus == ServiceCheckStatus.DEGRADED.name &&
-            runStatus == null &&
-            error?.startsWith("Last-run request failed:") == true
+        return recentChecks.all { it.failureType == PollFailureType.OBSERVATION_FAILURE }
     }
 }

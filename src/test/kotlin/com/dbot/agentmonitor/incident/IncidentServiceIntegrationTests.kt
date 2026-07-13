@@ -1,6 +1,7 @@
 package com.dbot.agentmonitor.incident
 
 import com.dbot.agentmonitor.domain.MonitoredService
+import com.dbot.agentmonitor.domain.PollFailureType
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import com.dbot.agentmonitor.domain.ServicePollResult
 import com.dbot.agentmonitor.store.ServiceStatusStore
@@ -47,7 +48,8 @@ class IncidentServiceIntegrationTests {
                 lastSuccessAt = null,
                 checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
                 responseTimeMs = 3000,
-                error = "Health request failed: timeout"
+                error = "monitor unavailable",
+                failureType = PollFailureType.HEALTH_FAILURE
             )
         )
 
@@ -66,7 +68,8 @@ class IncidentServiceIntegrationTests {
                 lastSuccessAt = null,
                 checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
                 responseTimeMs = 25,
-                error = "Slack send failed"
+                error = "Slack send failed",
+                failureType = PollFailureType.EXECUTION_FAILURE
             )
         )
 
@@ -85,7 +88,8 @@ class IncidentServiceIntegrationTests {
                 lastSuccessAt = null,
                 checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
                 responseTimeMs = 3100,
-                error = "Last-run request failed: timeout"
+                error = "observation unavailable",
+                failureType = PollFailureType.OBSERVATION_FAILURE
             )
         )
 
@@ -103,7 +107,8 @@ class IncidentServiceIntegrationTests {
             lastSuccessAt = null,
             checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
             responseTimeMs = 3100,
-            error = "Last-run request failed: timeout"
+            error = "observation unavailable",
+            failureType = PollFailureType.OBSERVATION_FAILURE
         )
 
         repeat(2) { index ->
@@ -139,7 +144,8 @@ class IncidentServiceIntegrationTests {
             lastSuccessAt = null,
             checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
             responseTimeMs = 3100,
-            error = "Last-run request failed: timeout"
+            error = "observation unavailable",
+            failureType = PollFailureType.OBSERVATION_FAILURE
         )
 
         recordAndApply(service, observationFailure)
@@ -161,7 +167,8 @@ class IncidentServiceIntegrationTests {
             lastSuccessAt = null,
             checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
             responseTimeMs = 3100,
-            error = "Last-run request failed: timeout"
+            error = "observation unavailable",
+            failureType = PollFailureType.OBSERVATION_FAILURE
         )
 
         recordAndApply(observationFailure)
@@ -240,7 +247,8 @@ class IncidentServiceIntegrationTests {
             lastSuccessAt = null,
             checkedAt = OffsetDateTime.parse("2026-04-08T10:00:00+09:00"),
             responseTimeMs = 3000,
-            error = "Health request failed: timeout"
+            error = "monitor unavailable",
+            failureType = PollFailureType.HEALTH_FAILURE
         )
 
         recordAndApply(firstFailure)

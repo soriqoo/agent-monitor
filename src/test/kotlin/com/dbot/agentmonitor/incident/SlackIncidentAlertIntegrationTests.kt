@@ -2,6 +2,7 @@ package com.dbot.agentmonitor.incident
 
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import com.dbot.agentmonitor.domain.ServicePollResult
+import com.dbot.agentmonitor.domain.PollFailureType
 import com.dbot.agentmonitor.store.ServiceStatusStore
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -56,7 +57,8 @@ class SlackIncidentAlertIntegrationTests {
                 lastSuccessAt = null,
                 checkedAt = OffsetDateTime.parse("2026-04-17T10:00:00+09:00"),
                 responseTimeMs = 3100,
-                error = "Health request failed: timeout"
+                error = "monitor unavailable",
+                failureType = PollFailureType.HEALTH_FAILURE
             )
         )
 

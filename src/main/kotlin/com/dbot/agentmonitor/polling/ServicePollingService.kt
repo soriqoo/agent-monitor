@@ -3,6 +3,7 @@ package com.dbot.agentmonitor.polling
 import com.dbot.agentmonitor.config.AppProperties
 import com.dbot.agentmonitor.domain.LastRunSnapshot
 import com.dbot.agentmonitor.domain.MonitoredService
+import com.dbot.agentmonitor.domain.PollFailureType
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import com.dbot.agentmonitor.domain.ServicePollResult
 import org.springframework.stereotype.Component
@@ -31,7 +32,8 @@ class ServicePollingService(
                 lastSuccessAt = null,
                 checkedAt = checkedAt,
                 responseTimeMs = elapsedMillis(startedAt),
-                error = "Health request failed: ${healthResponse.exceptionOrNull()?.messageForLog()}"
+                error = "Health request failed: ${healthResponse.exceptionOrNull()?.messageForLog()}",
+                failureType = PollFailureType.HEALTH_FAILURE
             )
         }
 
@@ -46,7 +48,8 @@ class ServicePollingService(
                 lastSuccessAt = null,
                 checkedAt = checkedAt,
                 responseTimeMs = elapsedMillis(startedAt),
-                error = "Last-run request failed: ${lastRunResponse.exceptionOrNull()?.messageForLog()}"
+                error = "Last-run request failed: ${lastRunResponse.exceptionOrNull()?.messageForLog()}",
+                failureType = PollFailureType.OBSERVATION_FAILURE
             )
         }
 
@@ -62,6 +65,11 @@ class ServicePollingService(
 
             else -> null
         }
+        val failureType = when {
+            mappedHealthStatus != ServiceCheckStatus.UP -> PollFailureType.HEALTH_FAILURE
+            lastRun.status?.uppercase() in EXECUTION_FAILURE_STATUSES -> PollFailureType.EXECUTION_FAILURE
+            else -> PollFailureType.NONE
+        }
 
         return ServicePollResult(
             serviceName = service.serviceName,
@@ -72,7 +80,8 @@ class ServicePollingService(
             lastSuccessAt = lastRun.sentAt,
             checkedAt = checkedAt,
             responseTimeMs = elapsedMillis(startedAt),
-            error = contractError
+            error = contractError,
+            failureType = failureType
         )
     }
 
@@ -108,6 +117,10 @@ class ServicePollingService(
 
     private fun Throwable.messageForLog(): String {
         return message?.lineSequence()?.firstOrNull()?.take(200) ?: javaClass.simpleName
+    }
+
+    companion object {
+        private val EXECUTION_FAILURE_STATUSES = setOf("FAILED", "ERROR")
     }
 }
 
