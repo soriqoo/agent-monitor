@@ -90,6 +90,10 @@ app_url() {
   echo "http://127.0.0.1:$(app_port)"
 }
 
+dummy_service_url() {
+  echo "http://127.0.0.1:${DUMMY_SERVICE_PORT:-18081}"
+}
+
 print_help() {
   cat <<'EOF'
 Usage:
@@ -105,6 +109,7 @@ Commands:
   ps-demo     Show compose service status including demo services
   logs        Show recent agent-monitor logs
   logs-demo   Show recent dummy monitored service logs
+  demo-mode   Get or change the dummy service runtime scenario
   logs-follow Follow agent-monitor logs
   health      Call /actuator/health
   summary     Call /internal/monitoring/summary
@@ -114,6 +119,7 @@ Environment:
   ENV_FILE    Override the runtime env file path
   REPO_DIR    Override the checked-out repository path
   LOG_LINES   Override the default log tail size for logs
+  DUMMY_SERVICE_PORT Override the localhost demo control port (default: 18081)
 
 Path resolution:
   - if the script is placed under runtime/, it uses ../repo and ./.env
@@ -216,6 +222,26 @@ run_logs_demo() {
   compose_demo logs --tail "$DEFAULT_LOG_LINES" dummy-monitored-service
 }
 
+run_demo_mode() {
+  load_env_file
+  local scenario="${1:-status}"
+
+  case "$scenario" in
+    status)
+      curl -fsS "$(dummy_service_url)/internal/test-control"
+      ;;
+    healthy|last-run-unavailable|health-down|run-failed|reset)
+      curl -fsS -X PUT "$(dummy_service_url)/internal/test-control/$scenario"
+      ;;
+    *)
+      echo "Unsupported demo scenario: $scenario" >&2
+      echo "Supported: status, healthy, last-run-unavailable, health-down, run-failed, reset" >&2
+      exit 1
+      ;;
+  esac
+  echo
+}
+
 run_logs_follow() {
   compose logs -f agent-monitor
 }
@@ -268,6 +294,9 @@ main() {
       ;;
     logs-demo)
       run_logs_demo
+      ;;
+    demo-mode)
+      run_demo_mode "${2:-status}"
       ;;
     logs-follow)
       run_logs_follow

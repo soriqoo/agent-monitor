@@ -12,6 +12,8 @@ services:
       - DUMMY_RUN_STATUS=${DUMMY_RUN_STATUS:-SENT}
       - DUMMY_LAST_RUN_DATE=${DUMMY_LAST_RUN_DATE:-2026-05-21}
       - DUMMY_ERROR=${DUMMY_ERROR:-}
+    ports:
+      - "127.0.0.1:${DUMMY_SERVICE_PORT:-18081}:8080"
     networks:
       - monitoring-shared
     healthcheck:
