@@ -73,7 +73,7 @@ class SlackAlertService(
         }
 
         try {
-            webClientBuilder
+            val response = webClientBuilder
                 .build()
                 .post()
                 .uri(appProperties.slack.webhookUrl)
@@ -82,6 +82,17 @@ class SlackAlertService(
                 .retrieve()
                 .toBodilessEntity()
                 .block(Duration.ofMillis(appProperties.monitoring.timeoutMs))
+
+            if (response?.statusCode?.is2xxSuccessful != true) {
+                logger.error(
+                    "Slack alert returned non-success status. serviceName={}, environment={}, alertType={}, status={}",
+                    serviceName,
+                    environment,
+                    alertType,
+                    response?.statusCode
+                )
+                return false
+            }
 
             alertEventStore.recordAlertEvent(
                 serviceName = serviceName,

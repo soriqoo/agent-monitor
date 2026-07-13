@@ -49,4 +49,32 @@ class SchemaMigrationTests {
         assertThat(historyColumns).contains("FAILURE_TYPE")
         assertThat(currentColumns).contains("FAILURE_TYPE")
     }
+
+    @Test
+    fun schemaCreatesReminderDueIndexIdempotently() {
+        val dataSource = DriverManagerDataSource(
+            "jdbc:h2:mem:schema-reminder-index;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+        )
+        val jdbcTemplate = JdbcTemplate(dataSource)
+        val schema = ResourceDatabasePopulator(ClassPathResource("schema.sql"))
+
+        schema.execute(dataSource)
+        schema.execute(dataSource)
+
+        val indexedColumns = jdbcTemplate.queryForList(
+            """
+            SELECT column_name
+            FROM information_schema.index_columns
+            WHERE index_name = 'ALERT_EVENT_REMINDER_DUE_IX'
+            ORDER BY ordinal_position
+            """.trimIndent(),
+            String::class.java
+        )
+        assertThat(indexedColumns).containsExactly(
+            "SERVICE_NAME",
+            "ENVIRONMENT",
+            "ALERT_TYPE",
+            "SENT_AT"
+        )
+    }
 }

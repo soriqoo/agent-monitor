@@ -83,6 +83,37 @@ class IncidentStoreIntegrationTests {
         assertThat(candidate.lastError).isEqualTo("failure")
     }
 
+    @Test
+    fun excludesIncidentWhenEligibleAlertIsExactlyAtCutoff() {
+        val cutoff = OffsetDateTime.parse("2026-07-13T10:00:00Z")
+        insertIncident("target-service", "prod", "OPEN", "2026-07-13T08:00:00Z", "failure")
+        insertAlert("target-service", "prod", "INCIDENT_REMINDER", "2026-07-13T10:00:00Z")
+
+        assertThat(incidentStore.findOpenIncidentsDueForReminder(cutoff)).isEmpty()
+    }
+
+    @Test
+    fun latestEligibleAlertDeterminesWhetherIncidentIsDue() {
+        val cutoff = OffsetDateTime.parse("2026-07-13T10:00:00Z")
+        insertIncident("target-service", "prod", "OPEN", "2026-07-13T08:00:00Z", "failure")
+        insertAlert("target-service", "prod", "INCIDENT_REMINDER", "2026-07-13T09:00:00Z")
+        insertAlert("target-service", "prod", "INCIDENT_OPENED", "2026-07-13T10:30:00Z")
+
+        assertThat(incidentStore.findOpenIncidentsDueForReminder(cutoff)).isEmpty()
+    }
+
+    @Test
+    fun ordersEqualTimeCandidatesByIncidentId() {
+        val cutoff = OffsetDateTime.parse("2026-07-13T10:00:00Z")
+        insertIncident("first-service", "prod", "OPEN", "2026-07-13T08:00:00Z", "failure")
+        insertIncident("second-service", "prod", "OPEN", "2026-07-13T08:00:00Z", "failure")
+
+        val candidates = incidentStore.findOpenIncidentsDueForReminder(cutoff)
+
+        assertThat(candidates.map { it.serviceName }).containsExactly("first-service", "second-service")
+        assertThat(candidates.map { it.id }).isSorted()
+    }
+
     private fun insertIncident(
         serviceName: String,
         environment: String,

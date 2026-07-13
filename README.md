@@ -93,6 +93,7 @@ Key environment variables:
 - `DB_URL`
 - `DB_USERNAME`
 - `DB_PASSWORD`
+- `SCHEDULING_POOL_SIZE`
 - `SLACK_ENABLED`
 - `SLACK_WEBHOOK_URL`
 - `SLACK_INCIDENT_REMINDER_ENABLED`
@@ -108,6 +109,7 @@ Notes:
 - The test profile uses in-memory H2 in PostgreSQL compatibility mode
 - DMIB can be auto-registered on startup through seed configuration
 - Sustained incident reminders are disabled by default. Set `SLACK_INCIDENT_REMINDER_ENABLED=true` only with Slack enabled and configured; reminders run every 60 minutes by default, and the scheduler checks every five minutes (`SLACK_INCIDENT_REMINDER_CRON="0 */5 * * * *"`).
+- Scheduled polling, retention, and reminder work uses three threads by default so webhook latency does not block unrelated jobs. Override `SCHEDULING_POOL_SIZE` to tune the pool.
 
 ## Running With Docker
 

@@ -66,6 +66,9 @@ CREATE TABLE IF NOT EXISTS alert_event (
     sent_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS alert_event_reminder_due_ix
+    ON alert_event (service_name, environment, alert_type, sent_at);
+
 CREATE TABLE IF NOT EXISTS retention_run_history (
     id BIGSERIAL PRIMARY KEY,
     status VARCHAR(30) NOT NULL,
