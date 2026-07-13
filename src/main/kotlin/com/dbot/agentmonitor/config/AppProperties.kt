@@ -20,7 +20,9 @@ data class AppProperties(
 
     data class Slack(
         val enabled: Boolean = false,
-        val webhookUrl: String = ""
+        val webhookUrl: String = "",
+        val incidentReminderEnabled: Boolean = false,
+        val incidentReminderIntervalMinutes: Long = 60
     )
 
     data class Seed(

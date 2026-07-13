@@ -1,6 +1,7 @@
 package com.dbot.agentmonitor.alert
 
 import com.dbot.agentmonitor.config.AppProperties
+import com.dbot.agentmonitor.domain.OpenIncidentReminderCandidate
 import com.dbot.agentmonitor.domain.ServicePollResult
 import com.dbot.agentmonitor.store.AlertEventStore
 import org.slf4j.LoggerFactory
@@ -19,6 +20,7 @@ class SlackAlertService(
     companion object {
         private const val INCIDENT_OPENED = "INCIDENT_OPENED"
         private const val INCIDENT_RESOLVED = "INCIDENT_RESOLVED"
+        private const val INCIDENT_REMINDER = "INCIDENT_REMINDER"
     }
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -39,9 +41,35 @@ class SlackAlertService(
         )
     }
 
+    fun notifyIncidentReminder(candidate: OpenIncidentReminderCandidate, remindedAt: OffsetDateTime): Boolean {
+        return sendAlert(
+            serviceName = candidate.serviceName,
+            environment = candidate.environment,
+            alertType = INCIDENT_REMINDER,
+            message = buildReminderMessage(candidate, remindedAt),
+            sentAt = remindedAt
+        )
+    }
+
     private fun sendAlert(result: ServicePollResult, alertType: String, message: String) {
+        sendAlert(
+            serviceName = result.serviceName,
+            environment = result.environment,
+            alertType = alertType,
+            message = message,
+            sentAt = null
+        )
+    }
+
+    private fun sendAlert(
+        serviceName: String,
+        environment: String,
+        alertType: String,
+        message: String,
+        sentAt: OffsetDateTime?
+    ): Boolean {
         if (!appProperties.slack.enabled || appProperties.slack.webhookUrl.isBlank()) {
-            return
+            return false
         }
 
         try {
@@ -56,20 +84,22 @@ class SlackAlertService(
                 .block(Duration.ofMillis(appProperties.monitoring.timeoutMs))
 
             alertEventStore.recordAlertEvent(
-                serviceName = result.serviceName,
-                environment = result.environment,
+                serviceName = serviceName,
+                environment = environment,
                 alertType = alertType,
                 message = message,
-                sentAt = OffsetDateTime.now()
+                sentAt = sentAt ?: OffsetDateTime.now()
             )
+            return true
         } catch (ex: Exception) {
             logger.error(
                 "Failed to send Slack alert. serviceName={}, environment={}, alertType={}",
-                result.serviceName,
-                result.environment,
+                serviceName,
+                environment,
                 alertType,
                 ex
             )
+            return false
         }
     }
 
@@ -115,6 +145,29 @@ class SlackAlertService(
             appendLine()
             append("- checkedAt: ")
             append(result.checkedAt)
+        }
+    }
+
+    private fun buildReminderMessage(
+        candidate: OpenIncidentReminderCandidate,
+        remindedAt: OffsetDateTime
+    ): String {
+        val elapsedOpenMinutes = maxOf(0, Duration.between(candidate.openedAt, remindedAt).toMinutes())
+
+        return buildString {
+            append(":warning: Incident reminder for ")
+            append(candidate.serviceName)
+            append(" (")
+            append(candidate.environment)
+            appendLine(")")
+            append("- openedAt: ")
+            append(candidate.openedAt)
+            appendLine()
+            append("- elapsedOpenMinutes: ")
+            append(elapsedOpenMinutes)
+            appendLine()
+            append("- lastError: ")
+            append(candidate.lastError ?: "null")
         }
     }
 }
