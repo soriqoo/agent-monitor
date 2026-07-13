@@ -178,6 +178,7 @@ Available helper commands:
 - `./agent-monitor.sh ps-demo`
 - `./agent-monitor.sh logs`
 - `./agent-monitor.sh logs-demo`
+- `./agent-monitor.sh demo-mode <scenario>`
 - `./agent-monitor.sh logs-follow`
 - `./agent-monitor.sh health`
 - `./agent-monitor.sh summary`
@@ -196,6 +197,7 @@ Start Agent Monitor with the demo target:
 ./agent-monitor.sh deploy-demo
 ./agent-monitor.sh ps-demo
 ./agent-monitor.sh logs-demo
+./agent-monitor.sh demo-mode status
 ```
 
 Then register the demo target from the dashboard:
@@ -205,7 +207,19 @@ Then register the demo target from the dashboard:
 - Environment: `demo`
 - Enabled: checked
 
-You can simulate target behavior with `.env` values used by
+Change the running demo target without recreating it:
+
+```bash
+./agent-monitor.sh demo-mode healthy
+./agent-monitor.sh demo-mode last-run-unavailable
+./agent-monitor.sh demo-mode health-down
+./agent-monitor.sh demo-mode run-failed
+./agent-monitor.sh demo-mode reset
+```
+
+`last-run-unavailable` keeps health `UP` while returning HTTP 503 from the
+last-run endpoint. This is the scenario used to verify observation-failure
+thresholds. `reset` returns control to the `.env` values used by
 `docker-compose.demo.yml`:
 
 - `DUMMY_HEALTH_STATUS=UP` or `DOWN`

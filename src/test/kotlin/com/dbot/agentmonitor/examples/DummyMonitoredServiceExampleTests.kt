@@ -25,6 +25,10 @@ class DummyMonitoredServiceExampleTests {
         assertThat(sourceText).contains("DUMMY_HEALTH_STATUS")
         assertThat(sourceText).contains("DUMMY_RUN_STATUS")
         assertThat(sourceText).contains("DUMMY_LAST_RUN_DATE")
+        assertThat(sourceText).contains("/internal/test-control")
+        assertThat(sourceText).contains("LAST_RUN_UNAVAILABLE")
+        assertThat(sourceText).contains("HEALTH_DOWN")
+        assertThat(sourceText).contains("RUN_FAILED")
     }
 
     @Test
@@ -38,10 +42,13 @@ class DummyMonitoredServiceExampleTests {
         assertThat(composeText).contains("dummy-monitored-service")
         assertThat(composeText).contains("examples/dummy-monitored-service")
         assertThat(composeText).contains("monitoring-shared")
+        assertThat(composeText).contains("DUMMY_SERVICE_PORT:-18081")
 
         val shellText = Files.readString(runtimeShellExample)
         assertThat(shellText).contains("deploy-demo")
         assertThat(shellText).contains("ps-demo")
+        assertThat(shellText).contains("demo-mode")
+        assertThat(shellText).contains("last-run-unavailable")
         assertThat(shellText).contains("docker-compose.demo.yml")
     }
 }
