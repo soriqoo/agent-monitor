@@ -1,5 +1,6 @@
 package com.dbot.agentmonitor.store
 
+import com.dbot.agentmonitor.domain.OpenIncidentReminderCandidate
 import com.dbot.agentmonitor.domain.RecentIncident
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
@@ -60,6 +61,53 @@ class IncidentStore(
             lastError,
             serviceName,
             environment
+        )
+    }
+
+    fun findOpenIncidentsDueForReminder(cutoff: OffsetDateTime): List<OpenIncidentReminderCandidate> {
+        return jdbcTemplate.query(
+            """
+            SELECT i.id,
+                   i.service_name,
+                   i.environment,
+                   i.opened_at,
+                   i.last_error
+            FROM incident i
+            WHERE i.status = 'OPEN'
+              AND COALESCE(
+                    (
+                        SELECT MAX(a.sent_at)
+                        FROM alert_event a
+                        WHERE a.service_name = i.service_name
+                          AND a.environment = i.environment
+                          AND a.alert_type IN ('INCIDENT_OPENED', 'INCIDENT_REMINDER')
+                          AND a.sent_at >= i.opened_at
+                    ),
+                    i.opened_at
+                  ) < ?
+            ORDER BY COALESCE(
+                         (
+                             SELECT MAX(a.sent_at)
+                             FROM alert_event a
+                             WHERE a.service_name = i.service_name
+                               AND a.environment = i.environment
+                               AND a.alert_type IN ('INCIDENT_OPENED', 'INCIDENT_REMINDER')
+                               AND a.sent_at >= i.opened_at
+                         ),
+                         i.opened_at
+                     ) ASC,
+                     i.id ASC
+            """.trimIndent(),
+            { rs, _ ->
+                OpenIncidentReminderCandidate(
+                    id = rs.getLong("id"),
+                    serviceName = rs.getString("service_name"),
+                    environment = rs.getString("environment"),
+                    openedAt = rs.getObject("opened_at", OffsetDateTime::class.java),
+                    lastError = rs.getString("last_error")
+                )
+            },
+            cutoff
         )
     }
 

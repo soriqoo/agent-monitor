@@ -51,6 +51,14 @@ data class RecentIncident(
     val lastError: String?
 )
 
+data class OpenIncidentReminderCandidate(
+    val id: Long,
+    val serviceName: String,
+    val environment: String,
+    val openedAt: OffsetDateTime,
+    val lastError: String?
+)
+
 data class RecentAlertEvent(
     val id: Long,
     val serviceName: String,
