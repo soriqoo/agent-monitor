@@ -43,6 +43,9 @@ class MonitoringDashboardPageIntegrationTests {
                 require(body.contains("Service Detail")) {
                     "Dashboard page should contain the service detail panel."
                 }
+                require(body.contains("Observation failure threshold")) {
+                    "Dashboard page should expose the service-specific incident threshold field."
+                }
             }
     }
 
@@ -90,6 +93,12 @@ class MonitoringDashboardPageIntegrationTests {
                 }
                 require(body.contains("Test connection")) {
                     "Dashboard script should expose a test connection action."
+                }
+                require(body.contains("observationFailureOpenThreshold")) {
+                    "Dashboard script should preserve the service-specific incident threshold."
+                }
+                require(body.contains("formatObservationFailurePolicy")) {
+                    "Dashboard script should render the configured failure policy."
                 }
             }
     }

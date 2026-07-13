@@ -13,6 +13,8 @@ import com.dbot.agentmonitor.polling.ServicePollingCommand
 import com.dbot.agentmonitor.polling.ServicePollingService
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Size
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
@@ -132,14 +134,16 @@ class MonitoredServiceController(
                 serviceName = request.serviceName,
                 baseUrl = request.baseUrl,
                 environment = request.environment,
-                enabled = request.enabled
+                enabled = request.enabled,
+                observationFailureOpenThreshold = request.observationFailureOpenThreshold
             ).also { created ->
                 operatorActionStore.record(
                     actionType = "SERVICE_CREATED",
                     targetServiceName = created.serviceName,
                     targetEnvironment = created.environment,
                     status = "SUCCESS",
-                    message = "Monitored service created. enabled=${created.enabled}"
+                    message = "Monitored service created. enabled=${created.enabled}, " +
+                        "observationFailureOpenThreshold=${created.observationFailureOpenThreshold ?: "default"}"
                 )
             }
         } catch (_: DataIntegrityViolationException) {
@@ -167,7 +171,8 @@ class MonitoredServiceController(
                 serviceName = request.serviceName,
                 baseUrl = request.baseUrl,
                 environment = request.environment,
-                enabled = request.enabled
+                enabled = request.enabled,
+                observationFailureOpenThreshold = request.observationFailureOpenThreshold
             ) ?: throw ResponseStatusException(
                 HttpStatus.NOT_FOUND,
                 "Monitored service not found. id=$id"
@@ -184,7 +189,8 @@ class MonitoredServiceController(
                 targetServiceName = updated.serviceName,
                 targetEnvironment = updated.environment,
                 status = "SUCCESS",
-                message = "Monitored service updated. enabled=${updated.enabled}"
+                message = "Monitored service updated. enabled=${updated.enabled}, " +
+                    "observationFailureOpenThreshold=${updated.observationFailureOpenThreshold ?: "default"}"
             )
 
             updated
@@ -232,7 +238,10 @@ data class UpsertMonitoredServiceRequest(
     @field:NotBlank
     @field:Size(max = 50)
     val environment: String,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    @field:Min(1)
+    @field:Max(20)
+    val observationFailureOpenThreshold: Int? = null
 )
 
 data class ProbeMonitoredServiceRequest(

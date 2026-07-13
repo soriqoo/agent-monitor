@@ -82,6 +82,19 @@
             <input id="environment" name="environment" maxlength="50" required>
           </label>
 
+          <label>
+            <span>Observation failure threshold</span>
+            <input
+              id="observationFailureOpenThreshold"
+              name="observationFailureOpenThreshold"
+              type="number"
+              min="1"
+              max="20"
+              placeholder="Global default (3)"
+            >
+            <small class="field-help">Leave blank to use the global incident threshold.</small>
+          </label>
+
           <label class="checkbox-row">
             <input id="enabled" name="enabled" type="checkbox" checked>
             <span>Enabled for polling</span>

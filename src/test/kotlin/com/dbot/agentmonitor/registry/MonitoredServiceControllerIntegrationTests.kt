@@ -81,6 +81,49 @@ class MonitoredServiceControllerIntegrationTests {
     }
 
     @Test
+    fun createStoresServiceSpecificObservationFailureThreshold() {
+        webTestClient.post()
+            .uri("/api/monitored-services")
+            .bodyValue(
+                mapOf(
+                    "serviceName" to "custom-policy-service",
+                    "baseUrl" to "http://custom-policy-service:8080",
+                    "environment" to "prod",
+                    "enabled" to true,
+                    "observationFailureOpenThreshold" to 2
+                )
+            )
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody()
+            .jsonPath("$.observationFailureOpenThreshold").isEqualTo(2)
+
+        webTestClient.get()
+            .uri("/api/monitored-services")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$[0].observationFailureOpenThreshold").isEqualTo(2)
+    }
+
+    @Test
+    fun createRejectsObservationFailureThresholdOutsideSupportedRange() {
+        webTestClient.post()
+            .uri("/api/monitored-services")
+            .bodyValue(
+                mapOf(
+                    "serviceName" to "invalid-policy-service",
+                    "baseUrl" to "http://invalid-policy-service:8080",
+                    "environment" to "prod",
+                    "enabled" to true,
+                    "observationFailureOpenThreshold" to 0
+                )
+            )
+            .exchange()
+            .expectStatus().isBadRequest
+    }
+
+    @Test
     fun updateChangesExistingMonitoredService() {
         val id = insertMonitoredService(
             serviceName = "dmib",

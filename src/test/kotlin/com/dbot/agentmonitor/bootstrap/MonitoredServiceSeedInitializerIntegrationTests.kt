@@ -22,6 +22,9 @@ class MonitoredServiceSeedInitializerIntegrationTests {
     @Autowired
     lateinit var jdbcTemplate: JdbcTemplate
 
+    @Autowired
+    lateinit var seedInitializer: MonitoredServiceSeedInitializer
+
     @Test
     fun applicationStartupSeedsDmibService() {
         val row = jdbcTemplate.queryForMap(
@@ -38,5 +41,34 @@ class MonitoredServiceSeedInitializerIntegrationTests {
         assertThat(row["base_url"]).isEqualTo("http://localhost:8081")
         assertThat(row["environment"]).isEqualTo("prod")
         assertThat(row["enabled"]).isEqualTo(true)
+    }
+
+    @Test
+    fun seedWithoutPolicyOverridePreservesManuallyConfiguredThreshold() {
+        jdbcTemplate.update(
+            """
+            UPDATE monitored_service
+            SET observation_failure_open_threshold = ?
+            WHERE service_name = ? AND environment = ?
+            """.trimIndent(),
+            2,
+            "dmib",
+            "prod"
+        )
+
+        seedInitializer.seedConfiguredServices()
+
+        val threshold = jdbcTemplate.queryForObject(
+            """
+            SELECT observation_failure_open_threshold
+            FROM monitored_service
+            WHERE service_name = ? AND environment = ?
+            """.trimIndent(),
+            Int::class.java,
+            "dmib",
+            "prod"
+        )
+
+        assertThat(threshold).isEqualTo(2)
     }
 }

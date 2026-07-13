@@ -32,6 +32,7 @@ data class AppProperties(
         val serviceName: String,
         val baseUrl: String,
         val environment: String = "prod",
-        val enabled: Boolean = true
+        val enabled: Boolean = true,
+        val observationFailureOpenThreshold: Int? = null
     )
 }

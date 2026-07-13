@@ -350,6 +350,12 @@ h1 {
   font-weight: 600;
 }
 
+.field-help {
+  color: var(--ink-3);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
 .service-form input {
   width: 100%;
   padding: 13px 14px;
@@ -600,7 +606,7 @@ h1 {
 
 .service-details-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr);
+  grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 0.75fr));
   gap: 12px;
 }
 

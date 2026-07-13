@@ -15,7 +15,7 @@ class ServicePollingCommand(
     fun pollAndRecord(service: MonitoredService): ServicePollResult {
         val result = servicePollingService.poll(service)
         serviceStatusStore.recordPollResult(result)
-        incidentService.applyPollResult(result)
+        incidentService.applyPollResult(service, result)
         return result
     }
 }

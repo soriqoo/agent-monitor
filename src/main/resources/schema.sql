@@ -4,9 +4,13 @@ CREATE TABLE IF NOT EXISTS monitored_service (
     base_url VARCHAR(255) NOT NULL,
     environment VARCHAR(50) NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    observation_failure_open_threshold INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE monitored_service
+    ADD COLUMN IF NOT EXISTS observation_failure_open_threshold INTEGER;
 
 CREATE UNIQUE INDEX IF NOT EXISTS monitored_service_service_env_ux
     ON monitored_service (service_name, environment);

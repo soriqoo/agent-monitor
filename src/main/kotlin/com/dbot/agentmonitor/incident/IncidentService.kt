@@ -2,6 +2,7 @@ package com.dbot.agentmonitor.incident
 
 import com.dbot.agentmonitor.alert.SlackAlertService
 import com.dbot.agentmonitor.config.AppProperties
+import com.dbot.agentmonitor.domain.MonitoredService
 import com.dbot.agentmonitor.domain.ServiceCheckStatus
 import com.dbot.agentmonitor.domain.ServicePollResult
 import com.dbot.agentmonitor.store.IncidentStore
@@ -22,10 +23,21 @@ class IncidentService(
 
     @Transactional
     fun applyPollResult(result: ServicePollResult) {
+        applyPollResult(result, appProperties.monitoring.observationFailureOpenThreshold)
+    }
+
+    @Transactional
+    fun applyPollResult(service: MonitoredService, result: ServicePollResult) {
+        val threshold = service.observationFailureOpenThreshold
+            ?: appProperties.monitoring.observationFailureOpenThreshold
+        applyPollResult(result, threshold)
+    }
+
+    private fun applyPollResult(result: ServicePollResult, observationFailureThreshold: Int) {
         val hasOpenIncident = incidentStore.hasOpenIncident(result.serviceName, result.environment)
 
         when {
-            shouldOpenIncident(result) && !hasOpenIncident -> {
+            shouldOpenIncident(result, observationFailureThreshold) && !hasOpenIncident -> {
                 incidentStore.openIncident(
                     serviceName = result.serviceName,
                     environment = result.environment,
@@ -47,7 +59,7 @@ class IncidentService(
         }
     }
 
-    private fun shouldOpenIncident(result: ServicePollResult): Boolean {
+    private fun shouldOpenIncident(result: ServicePollResult, observationFailureThreshold: Int): Boolean {
         if (isImmediateHealthFailure(result)) {
             return true
         }
@@ -56,7 +68,7 @@ class IncidentService(
             return true
         }
 
-        return hasReachedObservationFailureThreshold(result)
+        return hasReachedObservationFailureThreshold(result, observationFailureThreshold)
     }
 
     private fun shouldCloseIncident(result: ServicePollResult): Boolean {
@@ -77,12 +89,14 @@ class IncidentService(
         return result.error?.startsWith("Health ") == true
     }
 
-    private fun hasReachedObservationFailureThreshold(result: ServicePollResult): Boolean {
+    private fun hasReachedObservationFailureThreshold(
+        result: ServicePollResult,
+        threshold: Int
+    ): Boolean {
         if (!isObservationFailure(result)) {
             return false
         }
 
-        val threshold = appProperties.monitoring.observationFailureOpenThreshold
         val recentChecks = serviceStatusStore.findRecentChecks(result.serviceName, result.environment, threshold)
         if (recentChecks.size < threshold) {
             return false

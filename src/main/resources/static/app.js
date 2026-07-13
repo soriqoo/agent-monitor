@@ -19,6 +19,7 @@ const serviceNameInput = document.getElementById("serviceName");
 const baseUrlInput = document.getElementById("baseUrl");
 const environmentInput = document.getElementById("environment");
 const enabledInput = document.getElementById("enabled");
+const observationFailureOpenThresholdInput = document.getElementById("observationFailureOpenThreshold");
 
 const HISTORY_PREVIEW_COUNT = 2;
 const PROBE_BUTTON_TEXT = "Test connection";
@@ -184,6 +185,10 @@ function renderServices(rows) {
         <div class="detail-block">
           <span class="metric-label">Last checked</span>
           <span class="metric-value">${escapeHtml(formatTimestamp(row.lastCheckedAt))}</span>
+        </div>
+        <div class="detail-block">
+          <span class="metric-label">Failure policy</span>
+          <span class="metric-value">${escapeHtml(formatObservationFailurePolicy(row))}</span>
         </div>
       </div>
 
@@ -631,6 +636,7 @@ function resetForm() {
   serviceIdInput.value = "";
   form.reset();
   enabledInput.checked = true;
+  observationFailureOpenThresholdInput.value = "";
   formTitle.textContent = "Register Service";
   submitButton.textContent = "Create service";
   setFormMessage("");
@@ -642,6 +648,7 @@ function fillForm(row) {
   baseUrlInput.value = row.baseUrl;
   environmentInput.value = row.environment;
   enabledInput.checked = row.enabled;
+  observationFailureOpenThresholdInput.value = row.observationFailureOpenThreshold ?? "";
   formTitle.textContent = `Edit ${row.serviceName}`;
   submitButton.textContent = "Update service";
   setFormMessage("");
@@ -681,6 +688,11 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(parsed);
+}
+
+function formatObservationFailurePolicy(service) {
+  const threshold = service.observationFailureOpenThreshold;
+  return threshold == null ? "Global default" : `${threshold} checks`;
 }
 
 function actionStatusClass(status) {
@@ -764,12 +776,7 @@ async function loadServiceDetail(serviceId) {
 async function submitForm(event) {
   event.preventDefault();
 
-  const payload = {
-    serviceName: serviceNameInput.value.trim(),
-    baseUrl: baseUrlInput.value.trim(),
-    environment: environmentInput.value.trim(),
-    enabled: enabledInput.checked
-  };
+  const payload = currentFormPayload();
 
   try {
     if (serviceIdInput.value) {
@@ -794,11 +801,14 @@ async function submitForm(event) {
 }
 
 function currentFormPayload() {
+  const thresholdValue = observationFailureOpenThresholdInput.value.trim();
+
   return {
     serviceName: serviceNameInput.value.trim(),
     baseUrl: baseUrlInput.value.trim(),
     environment: environmentInput.value.trim(),
-    enabled: enabledInput.checked
+    enabled: enabledInput.checked,
+    observationFailureOpenThreshold: thresholdValue ? Number(thresholdValue) : null
   };
 }
 
@@ -850,7 +860,8 @@ async function toggleServiceEnabled(row, button) {
     serviceName: row.serviceName,
     baseUrl: row.baseUrl,
     environment: row.environment,
-    enabled: nextEnabled
+    enabled: nextEnabled,
+    observationFailureOpenThreshold: row.observationFailureOpenThreshold
   };
 
   button.disabled = true;

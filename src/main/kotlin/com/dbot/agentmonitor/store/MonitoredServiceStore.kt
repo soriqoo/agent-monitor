@@ -11,17 +11,25 @@ class MonitoredServiceStore(
         serviceName: String,
         baseUrl: String,
         environment: String,
-        enabled: Boolean
+        enabled: Boolean,
+        observationFailureOpenThreshold: Int? = null
     ): MonitoredService {
         jdbcTemplate.update(
             """
-            INSERT INTO monitored_service(service_name, base_url, environment, enabled)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO monitored_service(
+                service_name,
+                base_url,
+                environment,
+                enabled,
+                observation_failure_open_threshold
+            )
+            VALUES (?, ?, ?, ?, ?)
             """.trimIndent(),
             serviceName,
             baseUrl,
             environment,
-            enabled
+            enabled,
+            observationFailureOpenThreshold
         )
 
         return findByServiceNameAndEnvironment(serviceName, environment)
@@ -35,16 +43,21 @@ class MonitoredServiceStore(
         serviceName: String,
         baseUrl: String,
         environment: String,
-        enabled: Boolean
+        enabled: Boolean,
+        observationFailureOpenThreshold: Int? = null
     ) {
         val updated = jdbcTemplate.update(
             """
             UPDATE monitored_service
-            SET base_url = ?, enabled = ?, updated_at = CURRENT_TIMESTAMP
+            SET base_url = ?,
+                enabled = ?,
+                observation_failure_open_threshold = COALESCE(?, observation_failure_open_threshold),
+                updated_at = CURRENT_TIMESTAMP
             WHERE service_name = ? AND environment = ?
             """.trimIndent(),
             baseUrl,
             enabled,
+            observationFailureOpenThreshold,
             serviceName,
             environment
         )
@@ -52,13 +65,20 @@ class MonitoredServiceStore(
         if (updated == 0) {
             jdbcTemplate.update(
                 """
-                INSERT INTO monitored_service(service_name, base_url, environment, enabled)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO monitored_service(
+                    service_name,
+                    base_url,
+                    environment,
+                    enabled,
+                    observation_failure_open_threshold
+                )
+                VALUES (?, ?, ?, ?, ?)
                 """.trimIndent(),
                 serviceName,
                 baseUrl,
                 environment,
-                enabled
+                enabled,
+                observationFailureOpenThreshold
             )
         }
     }
@@ -66,7 +86,8 @@ class MonitoredServiceStore(
     fun findAll(): List<MonitoredService> {
         return jdbcTemplate.query(
             """
-            SELECT id, service_name, base_url, environment, enabled
+            SELECT id, service_name, base_url, environment, enabled,
+                   observation_failure_open_threshold
             FROM monitored_service
             ORDER BY id ASC
             """.trimIndent()
@@ -76,7 +97,8 @@ class MonitoredServiceStore(
                 serviceName = rs.getString("service_name"),
                 baseUrl = rs.getString("base_url"),
                 environment = rs.getString("environment"),
-                enabled = rs.getBoolean("enabled")
+                enabled = rs.getBoolean("enabled"),
+                observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold")
             )
         }
     }
@@ -89,6 +111,7 @@ class MonitoredServiceStore(
                    ms.base_url,
                    ms.environment,
                    ms.enabled,
+                   ms.observation_failure_open_threshold,
                    scs.health_status,
                    scs.run_status,
                    scs.last_run_date,
@@ -122,7 +145,8 @@ class MonitoredServiceStore(
                 lastRunDate = rs.getString("last_run_date"),
                 lastCheckedAt = rs.getObject("last_checked_at", java.time.OffsetDateTime::class.java),
                 error = rs.getString("error"),
-                openIncident = rs.getBoolean("open_incident")
+                openIncident = rs.getBoolean("open_incident"),
+                observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold")
             )
         }
     }
@@ -135,6 +159,7 @@ class MonitoredServiceStore(
                    ms.base_url,
                    ms.environment,
                    ms.enabled,
+                   ms.observation_failure_open_threshold,
                    scs.health_status,
                    scs.run_status,
                    scs.last_run_date,
@@ -168,7 +193,8 @@ class MonitoredServiceStore(
                     lastRunDate = rs.getString("last_run_date"),
                     lastCheckedAt = rs.getObject("last_checked_at", java.time.OffsetDateTime::class.java),
                     error = rs.getString("error"),
-                    openIncident = rs.getBoolean("open_incident")
+                    openIncident = rs.getBoolean("open_incident"),
+                    observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold")
                 )
             },
             id
@@ -178,7 +204,8 @@ class MonitoredServiceStore(
     fun findEnabledServices(): List<MonitoredService> {
         return jdbcTemplate.query(
             """
-            SELECT id, service_name, base_url, environment, enabled
+            SELECT id, service_name, base_url, environment, enabled,
+                   observation_failure_open_threshold
             FROM monitored_service
             WHERE enabled = TRUE
             ORDER BY id ASC
@@ -189,7 +216,8 @@ class MonitoredServiceStore(
                 serviceName = rs.getString("service_name"),
                 baseUrl = rs.getString("base_url"),
                 environment = rs.getString("environment"),
-                enabled = rs.getBoolean("enabled")
+                enabled = rs.getBoolean("enabled"),
+                observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold")
             )
         }
     }
@@ -197,7 +225,8 @@ class MonitoredServiceStore(
     fun findById(id: Long): MonitoredService? {
         return jdbcTemplate.query(
             """
-            SELECT id, service_name, base_url, environment, enabled
+            SELECT id, service_name, base_url, environment, enabled,
+                   observation_failure_open_threshold
             FROM monitored_service
             WHERE id = ?
             """.trimIndent(),
@@ -209,7 +238,8 @@ class MonitoredServiceStore(
     private fun findByServiceNameAndEnvironment(serviceName: String, environment: String): MonitoredService? {
         return jdbcTemplate.query(
             """
-            SELECT id, service_name, base_url, environment, enabled
+            SELECT id, service_name, base_url, environment, enabled,
+                   observation_failure_open_threshold
             FROM monitored_service
             WHERE service_name = ? AND environment = ?
             """.trimIndent(),
@@ -224,7 +254,8 @@ class MonitoredServiceStore(
         serviceName: String,
         baseUrl: String,
         environment: String,
-        enabled: Boolean
+        enabled: Boolean,
+        observationFailureOpenThreshold: Int? = null
     ): MonitoredService? {
         val updated = jdbcTemplate.update(
             """
@@ -233,6 +264,7 @@ class MonitoredServiceStore(
                 base_url = ?,
                 environment = ?,
                 enabled = ?,
+                observation_failure_open_threshold = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """.trimIndent(),
@@ -240,6 +272,7 @@ class MonitoredServiceStore(
             baseUrl,
             environment,
             enabled,
+            observationFailureOpenThreshold,
             id
         )
 
@@ -263,8 +296,14 @@ class MonitoredServiceStore(
             serviceName = rs.getString("service_name"),
             baseUrl = rs.getString("base_url"),
             environment = rs.getString("environment"),
-            enabled = rs.getBoolean("enabled")
+            enabled = rs.getBoolean("enabled"),
+            observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold")
         )
+    }
+
+    private fun java.sql.ResultSet.getNullableInt(columnName: String): Int? {
+        val value = getInt(columnName)
+        return if (wasNull()) null else value
     }
 
     fun countRegisteredServices(): Long {
