@@ -2,6 +2,7 @@ package com.dbot.agentmonitor.store
 
 import com.dbot.agentmonitor.domain.RecentServiceCheck
 import com.dbot.agentmonitor.domain.RecentServiceCheckEvent
+import com.dbot.agentmonitor.domain.PollFailureType
 import com.dbot.agentmonitor.domain.ServicePollResult
 import java.time.OffsetDateTime
 import org.springframework.jdbc.core.JdbcTemplate
@@ -15,7 +16,8 @@ class ServiceStatusStore(
     data class StoredCheck(
         val healthStatus: String,
         val runStatus: String?,
-        val error: String?
+        val error: String?,
+        val failureType: PollFailureType?
     )
 
     @Transactional
@@ -40,7 +42,7 @@ class ServiceStatusStore(
     fun findRecentChecks(serviceName: String, environment: String, limit: Int): List<StoredCheck> {
         return jdbcTemplate.query(
             """
-            SELECT health_status, run_status, error
+            SELECT health_status, run_status, error, failure_type
             FROM service_check_history
             WHERE service_name = ? AND environment = ?
             ORDER BY checked_at DESC, id DESC
@@ -50,7 +52,8 @@ class ServiceStatusStore(
                 StoredCheck(
                     healthStatus = rs.getString("health_status"),
                     runStatus = rs.getString("run_status"),
-                    error = rs.getString("error")
+                    error = rs.getString("error"),
+                    failureType = rs.getString("failure_type")?.toPollFailureTypeOrNull()
                 )
             },
             serviceName,
@@ -131,9 +134,10 @@ class ServiceStatusStore(
                 last_run_date,
                 response_time_ms,
                 error,
+                failure_type,
                 checked_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             result.serviceName,
             result.environment,
@@ -142,6 +146,7 @@ class ServiceStatusStore(
             result.lastRunDate,
             result.responseTimeMs,
             result.error,
+            result.failureType.name,
             result.checkedAt
         )
     }
@@ -155,7 +160,8 @@ class ServiceStatusStore(
                 last_run_date = ?,
                 last_success_at = ?,
                 last_checked_at = ?,
-                error = ?
+                error = ?,
+                failure_type = ?
             WHERE service_name = ? AND environment = ?
             """.trimIndent(),
             result.healthStatus.name,
@@ -164,6 +170,7 @@ class ServiceStatusStore(
             result.lastSuccessAt,
             result.checkedAt,
             result.error,
+            result.failureType.name,
             result.serviceName,
             result.environment
         )
@@ -179,9 +186,10 @@ class ServiceStatusStore(
                     last_run_date,
                     last_success_at,
                     last_checked_at,
-                    error
+                    error,
+                    failure_type
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """.trimIndent(),
                 result.serviceName,
                 result.environment,
@@ -190,8 +198,13 @@ class ServiceStatusStore(
                 result.lastRunDate,
                 result.lastSuccessAt,
                 result.checkedAt,
-                result.error
+                result.error,
+                result.failureType.name
             )
         }
+    }
+
+    private fun String.toPollFailureTypeOrNull(): PollFailureType? {
+        return runCatching { PollFailureType.valueOf(this) }.getOrNull()
     }
 }

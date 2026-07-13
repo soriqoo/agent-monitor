@@ -24,8 +24,12 @@ CREATE TABLE IF NOT EXISTS service_check_history (
     last_run_date VARCHAR(20),
     response_time_ms BIGINT,
     error TEXT,
+    failure_type VARCHAR(50),
     checked_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
+
+ALTER TABLE service_check_history
+    ADD COLUMN IF NOT EXISTS failure_type VARCHAR(50);
 
 CREATE TABLE IF NOT EXISTS service_current_status (
     service_name VARCHAR(100) NOT NULL,
@@ -36,8 +40,12 @@ CREATE TABLE IF NOT EXISTS service_current_status (
     last_success_at TIMESTAMP WITH TIME ZONE,
     last_checked_at TIMESTAMP WITH TIME ZONE NOT NULL,
     error TEXT,
+    failure_type VARCHAR(50),
     PRIMARY KEY (service_name, environment)
 );
+
+ALTER TABLE service_current_status
+    ADD COLUMN IF NOT EXISTS failure_type VARCHAR(50);
 
 CREATE TABLE IF NOT EXISTS incident (
     id BIGSERIAL PRIMARY KEY,
