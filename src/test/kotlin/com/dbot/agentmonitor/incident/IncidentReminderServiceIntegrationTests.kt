@@ -1,5 +1,8 @@
 package com.dbot.agentmonitor.incident
 
+import com.dbot.agentmonitor.alert.SlackAlertService
+import com.dbot.agentmonitor.config.AppProperties
+import com.dbot.agentmonitor.store.IncidentStore
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
@@ -13,6 +16,8 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.verifyNoInteractions
 import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
 
@@ -131,44 +136,52 @@ class IncidentReminderServiceIntegrationTests {
     }
 }
 
-@SpringBootTest(
-    properties = [
-        "app.slack.enabled=true",
-        "app.slack.webhook-url=http://127.0.0.1:9/slack",
-        "app.slack.incident-reminder-enabled=false"
-    ]
-)
-@ActiveProfiles("test")
-class IncidentReminderDisabledPolicyIntegrationTests {
+class IncidentReminderServiceDisabledConfigurationTests {
 
-    @Autowired
-    lateinit var incidentReminderService: IncidentReminderService
-
-    @Autowired
-    lateinit var jdbcTemplate: JdbcTemplate
-
-    @BeforeEach
-    fun setUp() {
-        jdbcTemplate.update("DELETE FROM alert_event")
-        jdbcTemplate.update("DELETE FROM incident")
+    @Test
+    fun genericSlackDisabledExitsWithoutQueryingOrSending() {
+        assertNoReminderWork(
+            AppProperties.Slack(
+                enabled = false,
+                webhookUrl = "http://localhost/slack",
+                incidentReminderEnabled = true
+            )
+        )
     }
 
     @Test
-    fun disabledReminderPolicyDoesNotSendOrRecordEvents() {
-        jdbcTemplate.update(
-            """
-            INSERT INTO incident(service_name, environment, status, opened_at, resolved_at, last_error)
-            VALUES (?, ?, 'OPEN', ?, NULL, ?)
-            """.trimIndent(),
-            "dmib",
-            "prod",
-            OffsetDateTime.parse("2026-07-13T08:00:00Z"),
-            "database connection refused"
+    fun blankWebhookExitsWithoutQueryingOrSending() {
+        assertNoReminderWork(
+            AppProperties.Slack(
+                enabled = true,
+                webhookUrl = " ",
+                incidentReminderEnabled = true
+            )
+        )
+    }
+
+    @Test
+    fun disabledReminderPolicyExitsWithoutQueryingOrSending() {
+        assertNoReminderWork(
+            AppProperties.Slack(
+                enabled = true,
+                webhookUrl = "http://localhost/slack",
+                incidentReminderEnabled = false
+            )
+        )
+    }
+
+    private fun assertNoReminderWork(slack: AppProperties.Slack) {
+        val incidentStore = mock(IncidentStore::class.java)
+        val slackAlertService = mock(SlackAlertService::class.java)
+        val service = IncidentReminderService(
+            incidentStore = incidentStore,
+            appProperties = AppProperties(slack = slack),
+            slackAlertService = slackAlertService
         )
 
-        assertThat(incidentReminderService.sendDueReminders(OffsetDateTime.parse("2026-07-13T10:00:00Z")))
-            .isZero()
-        val alertEventCount = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM alert_event", Long::class.java) ?: 0L
-        assertThat(alertEventCount).isZero()
+        assertThat(service.sendDueReminders(OffsetDateTime.parse("2026-07-13T10:00:00Z"))).isZero()
+
+        verifyNoInteractions(incidentStore, slackAlertService)
     }
 }
