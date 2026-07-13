@@ -22,13 +22,13 @@ class IncidentReminderSchedulerTests {
         }.`when`(reminderService).sendDueReminders(any(OffsetDateTime::class.java) ?: OffsetDateTime.MIN)
         val scheduler = IncidentReminderScheduler(
             incidentReminderService = reminderService,
-            appProperties = AppProperties(timezone = "Asia/Seoul")
+            appProperties = AppProperties(timezone = "UTC")
         )
 
         scheduler.sendDueReminders()
 
         assertThat(delegatedNow).isNotNull
-        assertThat(delegatedNow!!.offset).isEqualTo(ZoneOffset.ofHours(9))
+        assertThat(delegatedNow!!.offset).isEqualTo(ZoneOffset.UTC)
 
         val scheduled = IncidentReminderScheduler::class.java
             .getMethod("sendDueReminders")
