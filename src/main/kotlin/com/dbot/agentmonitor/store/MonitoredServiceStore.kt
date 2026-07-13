@@ -2,6 +2,7 @@ package com.dbot.agentmonitor.store
 
 import com.dbot.agentmonitor.domain.MonitoredService
 import com.dbot.agentmonitor.domain.MonitoredServiceOverview
+import com.dbot.agentmonitor.domain.PollFailureType
 import org.springframework.jdbc.core.JdbcTemplate
 
 class MonitoredServiceStore(
@@ -117,6 +118,7 @@ class MonitoredServiceStore(
                    scs.last_run_date,
                    scs.last_checked_at,
                    scs.error,
+                   scs.failure_type,
                    CASE
                      WHEN EXISTS (
                        SELECT 1
@@ -146,7 +148,8 @@ class MonitoredServiceStore(
                 lastCheckedAt = rs.getObject("last_checked_at", java.time.OffsetDateTime::class.java),
                 error = rs.getString("error"),
                 openIncident = rs.getBoolean("open_incident"),
-                observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold")
+                observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold"),
+                failureType = rs.getString("failure_type")?.toPollFailureTypeOrNull()
             )
         }
     }
@@ -165,6 +168,7 @@ class MonitoredServiceStore(
                    scs.last_run_date,
                    scs.last_checked_at,
                    scs.error,
+                   scs.failure_type,
                    CASE
                      WHEN EXISTS (
                        SELECT 1
@@ -194,7 +198,8 @@ class MonitoredServiceStore(
                     lastCheckedAt = rs.getObject("last_checked_at", java.time.OffsetDateTime::class.java),
                     error = rs.getString("error"),
                     openIncident = rs.getBoolean("open_incident"),
-                    observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold")
+                    observationFailureOpenThreshold = rs.getNullableInt("observation_failure_open_threshold"),
+                    failureType = rs.getString("failure_type")?.toPollFailureTypeOrNull()
                 )
             },
             id
@@ -304,6 +309,10 @@ class MonitoredServiceStore(
     private fun java.sql.ResultSet.getNullableInt(columnName: String): Int? {
         val value = getInt(columnName)
         return if (wasNull()) null else value
+    }
+
+    private fun String.toPollFailureTypeOrNull(): PollFailureType? {
+        return runCatching { PollFailureType.valueOf(this) }.getOrNull()
     }
 
     fun countRegisteredServices(): Long {

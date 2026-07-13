@@ -57,9 +57,10 @@ class MonitoredServiceOverviewIntegrationTests {
                 last_run_date,
                 last_success_at,
                 last_checked_at,
-                error
+                error,
+                failure_type
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             "dmib",
             "prod",
@@ -68,7 +69,8 @@ class MonitoredServiceOverviewIntegrationTests {
             "2026-04-27",
             OffsetDateTime.parse("2026-04-27T08:00:03+09:00"),
             OffsetDateTime.parse("2026-04-27T09:00:00+09:00"),
-            null
+            null,
+            "NONE"
         )
         jdbcTemplate.update(
             """
@@ -91,6 +93,7 @@ class MonitoredServiceOverviewIntegrationTests {
             .jsonPath("$[0].healthStatus").isEqualTo("UP")
             .jsonPath("$[0].runStatus").isEqualTo("SENT")
             .jsonPath("$[0].lastRunDate").isEqualTo("2026-04-27")
+            .jsonPath("$[0].failureType").isEqualTo("NONE")
             .jsonPath("$[0].openIncident").isEqualTo(true)
     }
 
@@ -127,9 +130,10 @@ class MonitoredServiceOverviewIntegrationTests {
                 last_run_date,
                 last_success_at,
                 last_checked_at,
-                error
+                error,
+                failure_type
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             "dmib",
             "prod",
@@ -138,7 +142,8 @@ class MonitoredServiceOverviewIntegrationTests {
             "2026-05-15",
             OffsetDateTime.parse("2026-05-15T08:00:03+09:00"),
             OffsetDateTime.parse("2026-05-15T08:05:00+09:00"),
-            null
+            null,
+            "NONE"
         )
         jdbcTemplate.update(
             """
@@ -150,9 +155,10 @@ class MonitoredServiceOverviewIntegrationTests {
                 last_run_date,
                 last_success_at,
                 last_checked_at,
-                error
+                error,
+                failure_type
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             "daily-english-bot",
             "prod",
@@ -161,7 +167,8 @@ class MonitoredServiceOverviewIntegrationTests {
             null,
             null,
             OffsetDateTime.parse("2026-05-15T08:10:00+09:00"),
-            "Health request failed"
+            "Health request failed",
+            "HEALTH_FAILURE"
         )
 
         jdbcTemplate.update(
@@ -184,10 +191,47 @@ class MonitoredServiceOverviewIntegrationTests {
             .jsonPath("$[0].serviceName").isEqualTo("dmib")
             .jsonPath("$[0].enabled").isEqualTo(true)
             .jsonPath("$[0].healthStatus").isEqualTo("UP")
+            .jsonPath("$[0].failureType").isEqualTo("NONE")
             .jsonPath("$[0].openIncident").isEqualTo(false)
             .jsonPath("$[1].serviceName").isEqualTo("daily-english-bot")
             .jsonPath("$[1].enabled").isEqualTo(false)
             .jsonPath("$[1].healthStatus").isEqualTo("DOWN")
+            .jsonPath("$[1].failureType").isEqualTo("HEALTH_FAILURE")
             .jsonPath("$[1].openIncident").isEqualTo(true)
+    }
+
+    @Test
+    fun overviewReturnsNullForUnknownStoredFailureType() {
+        jdbcTemplate.update(
+            """
+            INSERT INTO monitored_service(service_name, base_url, environment, enabled)
+            VALUES (?, ?, ?, ?)
+            """.trimIndent(),
+            "legacy-service",
+            "http://legacy-service:8080",
+            "prod",
+            true
+        )
+        jdbcTemplate.update(
+            """
+            INSERT INTO service_current_status(
+                service_name, environment, health_status, last_checked_at, failure_type
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """.trimIndent(),
+            "legacy-service",
+            "prod",
+            "UP",
+            OffsetDateTime.parse("2026-05-15T08:05:00+09:00"),
+            "LEGACY_FAILURE"
+        )
+
+        webTestClient.get()
+            .uri("/api/monitored-services/overview")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$[0].serviceName").isEqualTo("legacy-service")
+            .jsonPath("$[0].failureType").isEmpty()
     }
 }

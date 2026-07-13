@@ -37,7 +37,8 @@ data class MonitoredServiceOverview(
     val lastCheckedAt: OffsetDateTime?,
     val error: String?,
     val openIncident: Boolean,
-    val observationFailureOpenThreshold: Int? = null
+    val observationFailureOpenThreshold: Int? = null,
+    val failureType: PollFailureType? = null
 )
 
 data class RecentIncident(
@@ -75,7 +76,8 @@ data class RecentServiceCheck(
     val lastRunDate: String?,
     val responseTimeMs: Long?,
     val error: String?,
-    val checkedAt: OffsetDateTime
+    val checkedAt: OffsetDateTime,
+    val failureType: PollFailureType? = null
 )
 
 data class RecentServiceCheckEvent(
@@ -86,7 +88,8 @@ data class RecentServiceCheckEvent(
     val lastRunDate: String?,
     val responseTimeMs: Long?,
     val error: String?,
-    val checkedAt: OffsetDateTime
+    val checkedAt: OffsetDateTime,
+    val failureType: PollFailureType? = null
 )
 
 data class MonitoringHistorySnapshot(

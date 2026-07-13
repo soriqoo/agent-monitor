@@ -70,6 +70,7 @@ class ServiceStatusStore(
                    last_run_date,
                    response_time_ms,
                    error,
+                   failure_type,
                    checked_at
             FROM service_check_history
             WHERE service_name = ? AND environment = ?
@@ -83,7 +84,8 @@ class ServiceStatusStore(
                     lastRunDate = rs.getString("last_run_date"),
                     responseTimeMs = rs.getObject("response_time_ms", java.lang.Long::class.java)?.toLong(),
                     error = rs.getString("error"),
-                    checkedAt = rs.getObject("checked_at", OffsetDateTime::class.java)
+                    checkedAt = rs.getObject("checked_at", OffsetDateTime::class.java),
+                    failureType = rs.getString("failure_type")?.toPollFailureTypeOrNull()
                 )
             },
             serviceName,
@@ -102,6 +104,7 @@ class ServiceStatusStore(
                    last_run_date,
                    response_time_ms,
                    error,
+                   failure_type,
                    checked_at
             FROM service_check_history
             ORDER BY checked_at DESC, id DESC
@@ -116,7 +119,8 @@ class ServiceStatusStore(
                     lastRunDate = rs.getString("last_run_date"),
                     responseTimeMs = rs.getObject("response_time_ms", java.lang.Long::class.java)?.toLong(),
                     error = rs.getString("error"),
-                    checkedAt = rs.getObject("checked_at", OffsetDateTime::class.java)
+                    checkedAt = rs.getObject("checked_at", OffsetDateTime::class.java),
+                    failureType = rs.getString("failure_type")?.toPollFailureTypeOrNull()
                 )
             },
             limit

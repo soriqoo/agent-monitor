@@ -62,9 +62,10 @@ class MonitoredServiceDetailIntegrationTests {
                 last_run_date,
                 last_success_at,
                 last_checked_at,
-                error
+                error,
+                failure_type
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             "dmib",
             "prod",
@@ -73,7 +74,8 @@ class MonitoredServiceDetailIntegrationTests {
             "2026-05-06",
             OffsetDateTime.parse("2026-05-06T08:00:00+09:00"),
             OffsetDateTime.parse("2026-05-06T08:05:00+09:00"),
-            null
+            null,
+            "NONE"
         )
 
         jdbcTemplate.update(
@@ -86,9 +88,10 @@ class MonitoredServiceDetailIntegrationTests {
                 last_run_date,
                 response_time_ms,
                 error,
+                failure_type,
                 checked_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             "dmib",
             "prod",
@@ -97,6 +100,7 @@ class MonitoredServiceDetailIntegrationTests {
             "2026-05-06",
             182L,
             null,
+            "NONE",
             OffsetDateTime.parse("2026-05-06T08:05:00+09:00")
         )
 
@@ -152,8 +156,10 @@ class MonitoredServiceDetailIntegrationTests {
             .expectBody()
             .jsonPath("$.service.serviceName").isEqualTo("dmib")
             .jsonPath("$.service.runStatus").isEqualTo("SENT")
+            .jsonPath("$.service.failureType").isEqualTo("NONE")
             .jsonPath("$.checks.length()").isEqualTo(1)
             .jsonPath("$.checks[0].healthStatus").isEqualTo("UP")
+            .jsonPath("$.checks[0].failureType").isEqualTo("NONE")
             .jsonPath("$.checks[0].responseTimeMs").isEqualTo(182)
             .jsonPath("$.incidents.length()").isEqualTo(1)
             .jsonPath("$.incidents[0].serviceName").isEqualTo("dmib")
