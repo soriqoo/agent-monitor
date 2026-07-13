@@ -189,6 +189,7 @@ class MonitoringHistoryControllerIntegrationTests {
             lastRunDate = "2026-05-18",
             responseTimeMs = 42L,
             error = null,
+            failureType = "NONE",
             checkedAt = OffsetDateTime.parse("2026-05-18T10:00:00+09:00")
         )
         insertServiceCheck(
@@ -199,6 +200,7 @@ class MonitoringHistoryControllerIntegrationTests {
             lastRunDate = null,
             responseTimeMs = 99L,
             error = "Health request failed: timeout",
+            failureType = "HEALTH_FAILURE",
             checkedAt = OffsetDateTime.parse("2026-05-18T10:05:00+09:00")
         )
 
@@ -211,9 +213,11 @@ class MonitoringHistoryControllerIntegrationTests {
             .jsonPath("$[0].serviceName").isEqualTo("latest-bot")
             .jsonPath("$[0].environment").isEqualTo("prod")
             .jsonPath("$[0].healthStatus").isEqualTo("DOWN")
+            .jsonPath("$[0].failureType").isEqualTo("HEALTH_FAILURE")
             .jsonPath("$[0].error").isEqualTo("Health request failed: timeout")
             .jsonPath("$[1].serviceName").isEqualTo("old-bot")
             .jsonPath("$[1].runStatus").isEqualTo("SENT")
+            .jsonPath("$[1].failureType").isEqualTo("NONE")
     }
 
     @Test
@@ -227,6 +231,7 @@ class MonitoringHistoryControllerIntegrationTests {
                 lastRunDate = "2026-05-18",
                 responseTimeMs = index.toLong(),
                 error = null,
+                failureType = "NONE",
                 checkedAt = OffsetDateTime.parse("2026-05-18T10:${index.toString().padStart(2, '0')}:00+09:00")
             )
         }
@@ -249,6 +254,7 @@ class MonitoringHistoryControllerIntegrationTests {
         lastRunDate: String?,
         responseTimeMs: Long,
         error: String?,
+        failureType: String,
         checkedAt: OffsetDateTime
     ) {
         jdbcTemplate.update(
@@ -261,9 +267,10 @@ class MonitoringHistoryControllerIntegrationTests {
                 last_run_date,
                 response_time_ms,
                 error,
+                failure_type,
                 checked_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             serviceName,
             environment,
@@ -272,6 +279,7 @@ class MonitoringHistoryControllerIntegrationTests {
             lastRunDate,
             responseTimeMs,
             error,
+            failureType,
             checkedAt
         )
     }

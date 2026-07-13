@@ -190,6 +190,10 @@ function renderServices(rows) {
           <span class="metric-label">Failure policy</span>
           <span class="metric-value">${escapeHtml(formatObservationFailurePolicy(row))}</span>
         </div>
+        <div class="detail-block">
+          <span class="metric-label">Failure type</span>
+          <span class="badge ${failureTypeClass(row.failureType)}">${escapeHtml(formatFailureType(row.failureType))}</span>
+        </div>
       </div>
 
       ${row.error ? `
@@ -239,6 +243,10 @@ function renderServiceDetail(detail) {
             <span class="metric-label">Last checked</span>
             <span class="metric-value">${escapeHtml(formatTimestamp(service.lastCheckedAt))}</span>
           </div>
+          <div class="status-group">
+            <span class="metric-label">Failure type</span>
+            <span class="badge ${failureTypeClass(service.failureType)}">${escapeHtml(formatFailureType(service.failureType))}</span>
+          </div>
         </div>
 
         <div class="detail-summary-grid">
@@ -282,7 +290,10 @@ function renderServiceDetail(detail) {
                     <span class="history-title">${escapeHtml(formatTimestamp(item.checkedAt))}</span>
                     <span class="history-subtitle">${escapeHtml(item.responseTimeMs != null ? `${item.responseTimeMs} ms` : "Response time unavailable")}</span>
                   </div>
-                  <span class="badge ${badgeClass(item.healthStatus)}">${escapeHtml(item.healthStatus)}</span>
+                  <div class="history-badges">
+                    <span class="badge ${badgeClass(item.healthStatus)}">${escapeHtml(item.healthStatus)}</span>
+                    ${renderCheckFailureBadge(item.failureType)}
+                  </div>
                 </div>
                 <div class="detail-check-metrics">
                   <div class="alert-metric-card">
@@ -379,7 +390,10 @@ function renderCheckHistory(items) {
           <span class="history-title">${escapeHtml(item.serviceName)}</span>
           <span class="history-subtitle">${escapeHtml(item.environment)} / ${escapeHtml(formatTimestamp(item.checkedAt))}</span>
         </div>
-        <span class="badge ${badgeClass(item.healthStatus)}">${escapeHtml(item.healthStatus)}</span>
+        <div class="history-badges">
+          <span class="badge ${badgeClass(item.healthStatus)}">${escapeHtml(item.healthStatus)}</span>
+          ${renderCheckFailureBadge(item.failureType)}
+        </div>
       </div>
       <div class="detail-check-metrics">
         <div class="alert-metric-card">
@@ -693,6 +707,49 @@ function formatDateTime(value) {
 function formatObservationFailurePolicy(service) {
   const threshold = service.observationFailureOpenThreshold;
   return threshold == null ? "Global default" : `${threshold} checks`;
+}
+
+function formatFailureType(value) {
+  switch ((value || "").toUpperCase()) {
+    case "NONE":
+      return "No failure";
+    case "HEALTH_FAILURE":
+      return "Health";
+    case "EXECUTION_FAILURE":
+      return "Execution";
+    case "OBSERVATION_FAILURE":
+      return "Observation";
+    default:
+      return "Unclassified";
+  }
+}
+
+function failureTypeClass(value) {
+  switch ((value || "").toUpperCase()) {
+    case "NONE":
+      return "up";
+    case "OBSERVATION_FAILURE":
+      return "degraded";
+    case "HEALTH_FAILURE":
+    case "EXECUTION_FAILURE":
+      return "down";
+    default:
+      return "muted";
+  }
+}
+
+function renderCheckFailureBadge(value) {
+  const visibleFailureTypes = new Set([
+    "HEALTH_FAILURE",
+    "EXECUTION_FAILURE",
+    "OBSERVATION_FAILURE"
+  ]);
+
+  if (!visibleFailureTypes.has(value)) {
+    return "";
+  }
+
+  return `<span class="badge ${failureTypeClass(value)}">${escapeHtml(formatFailureType(value))}</span>`;
 }
 
 function actionStatusClass(status) {
