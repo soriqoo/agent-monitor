@@ -30,6 +30,9 @@ app:
   slack:
     enabled: "${SLACK_ENABLED:false}"
     webhook-url: "${SLACK_WEBHOOK_URL:}"
+    incident-reminder-enabled: "${SLACK_INCIDENT_REMINDER_ENABLED:false}"
+    incident-reminder-interval-minutes: "${SLACK_INCIDENT_REMINDER_INTERVAL_MINUTES:60}"
+    incident-reminder-cron: "${SLACK_INCIDENT_REMINDER_CRON:0 */5 * * * *}"
 
 management:
   endpoints:

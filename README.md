@@ -95,6 +95,9 @@ Key environment variables:
 - `DB_PASSWORD`
 - `SLACK_ENABLED`
 - `SLACK_WEBHOOK_URL`
+- `SLACK_INCIDENT_REMINDER_ENABLED`
+- `SLACK_INCIDENT_REMINDER_INTERVAL_MINUTES`
+- `SLACK_INCIDENT_REMINDER_CRON`
 - `APP_SEED_ENABLED`
 - `DMIB_BASE_URL`
 - `DMIB_ENVIRONMENT`
@@ -104,6 +107,7 @@ Notes:
 - PostgreSQL is the default runtime database
 - The test profile uses in-memory H2 in PostgreSQL compatibility mode
 - DMIB can be auto-registered on startup through seed configuration
+- Sustained incident reminders are disabled by default. Set `SLACK_INCIDENT_REMINDER_ENABLED=true` only with Slack enabled and configured; reminders run every 60 minutes by default, and the scheduler checks every five minutes (`SLACK_INCIDENT_REMINDER_CRON="0 */5 * * * *"`).
 
 ## Running With Docker
 

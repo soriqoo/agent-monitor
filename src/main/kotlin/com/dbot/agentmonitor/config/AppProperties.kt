@@ -22,7 +22,8 @@ data class AppProperties(
         val enabled: Boolean = false,
         val webhookUrl: String = "",
         val incidentReminderEnabled: Boolean = false,
-        val incidentReminderIntervalMinutes: Long = 60
+        val incidentReminderIntervalMinutes: Long = 60,
+        val incidentReminderCron: String = "0 */5 * * * *"
     )
 
     data class Seed(
